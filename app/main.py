@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import os
 from pathlib import Path
 import json
 from typing import Any, Dict, Optional
@@ -73,6 +74,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
                 request.message,
                 "--no-markdown",
             ],
+            env=os.environ.copy(),
             check=False,
             capture_output=True,
             text=True,
