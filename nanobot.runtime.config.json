@@ -1,0 +1,36 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "/app/workspace",
+      "model": "gemini-2.5-flash",
+      "provider": "gemini"
+    }
+  },
+  "providers": {
+    "ollama": {
+      "apiBase": "http://localhost:11434"
+    },
+    "openai": {
+      "apiKey": ""
+    },
+    "gemini": {
+      "apiKey": "AIzaSyCWteDnuZXe3vwIzVlZZXbJJeepiYjhLHU"
+    }
+  },
+  "tools": {
+    "web": {},
+    "mcpServers": {
+      "jay_math": {
+        "command": "python",
+        "args": [
+          "-m",
+          "mcp_math_server"
+        ],
+        "enabledTools": [
+          "math_eval",
+          "sanjay_profit"
+        ]
+      }
+    }
+  }
+}
