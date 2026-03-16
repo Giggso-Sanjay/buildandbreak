@@ -1,19 +1,16 @@
-# Build from repo root (BB): docker build -f buildandbreak/Dockerfile .
-# Frontend lives at buildandbreak/frontend/
+# Build from buildandbreak: docker build -t orca .
+# Or from BB root: docker build -f buildandbreak/Dockerfile buildandbreak
 # Single image: FastAPI backend + React frontend (Orca UI)
-# AWS: push to ECR, deploy to ECS/EKS. FE served at /, API at /chat, /health.
 
 # ─── Stage 1: Build frontend ───────────────────────────────────────────────
 FROM node:20-alpine AS frontend-builder
 
 WORKDIR /app
 
-# Install deps
-COPY buildandbreak/frontend/package*.json ./
+COPY frontend/package*.json ./
 RUN npm ci
 
-# Build with empty API base (same-origin in prod)
-COPY buildandbreak/frontend/ ./
+COPY frontend/ ./
 ENV VITE_API_BASE_URL=
 RUN npm run build
 
@@ -25,14 +22,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Backend deps
-COPY buildandbreak/requirements.txt ./
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Backend code
-COPY buildandbreak/ ./
+COPY . ./
 
-# Frontend static files from stage 1
 COPY --from=frontend-builder /app/dist ./static
 
 EXPOSE 8000
