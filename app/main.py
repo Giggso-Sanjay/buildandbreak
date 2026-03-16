@@ -1,19 +1,33 @@
-import logging
-import subprocess
-import os
-from pathlib import Path
 import json
+import logging
+import os
+import re
+import subprocess
+from pathlib import Path
 from typing import Any, Dict, Optional
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .agent_factory import build_config_from_env, write_runtime_config
+from .auth import verify_token
 
 logger = logging.getLogger("nanobot_api")
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(title="Nanobot Agent API", version="0.1.0")
+
+# CORS for dev; prod serves FE from same origin
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class ChatRequest(BaseModel):
@@ -50,7 +64,10 @@ async def health() -> Dict[str, str]:
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(
+    request: ChatRequest,
+    _auth: dict = Depends(verify_token),
+) -> ChatResponse:
     """
     Proxy the request into the real `nanobot` CLI:
 
@@ -103,6 +120,13 @@ async def chat(request: ChatRequest) -> ChatResponse:
         reply_text = "[nanobot error] CLI returned non-zero exit code"
     else:
         reply_text = stdout or "[nanobot] (no output)"
+        # Strip nanobot CLI prefix before showing to user
+        reply_text = re.sub(
+            r"Using config:.*?\n\n🐈 nanobot\n",
+            "",
+            reply_text,
+            count=1,
+        ).strip()
 
     raw: Dict[str, Any] = {
         "provider": provider,
@@ -124,4 +148,26 @@ async def chat(request: ChatRequest) -> ChatResponse:
         json.dump(response.model_dump(), f)
      
     return response
+
+
+# ─── Serve frontend (same image, AWS deployment) ─────────────────────────────
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+if STATIC_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(STATIC_DIR / "assets")), name="assets")
+
+    @app.get("/")
+    async def root() -> FileResponse:
+        return FileResponse(str(STATIC_DIR / "index.html"))
+
+    _favicon = STATIC_DIR / "favicon.svg"
+    if _favicon.exists():
+
+        @app.get("/favicon.svg")
+        async def favicon() -> FileResponse:
+            return FileResponse(str(_favicon))
+
+    @app.get("/{path:path}")
+    async def serve_spa(path: str) -> FileResponse:
+        return FileResponse(str(STATIC_DIR / "index.html"))
 

@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Base styles for Orca - Gemini-inspired aesthetic */
+@layer base {
+  html,
+  body {
+    margin: 0;
+    min-height: 100vh;
+  }
+  body {
+    @apply bg-neutral-50 text-neutral-900 antialiased;
+  }
+  #root {
+    min-height: 100vh;
+  }
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-neutral-950 text-neutral-100;
+    }
+  }
+}
