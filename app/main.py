@@ -117,7 +117,8 @@ async def chat(
     stderr = (completed.stderr or "").strip()
 
     if completed.returncode != 0:
-        reply_text = "[nanobot error] CLI returned non-zero exit code"
+        err_detail = stderr or stdout or "No output captured"
+        reply_text = f"[nanobot error] CLI returned non-zero exit code (exit {completed.returncode})\n\n{err_detail}"
     else:
         reply_text = stdout or "[nanobot] (no output)"
         # Strip nanobot CLI prefix before showing to user

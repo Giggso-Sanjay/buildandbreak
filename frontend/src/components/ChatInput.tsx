@@ -23,32 +23,28 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <motion.div
-      className="fixed bottom-0 left-0 right-0 z-30 flex justify-center border-t border-neutral-200 bg-white/80 px-4 py-4 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80"
-      initial={{ y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3, delay: 0.1 }}
+    <motion.form
+      className="flex w-full max-w-2xl flex-1 min-w-0 items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 dark:border-neutral-700 dark:bg-neutral-900"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      onSubmit={handleSubmit}
     >
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-2xl items-center gap-2 rounded-full border border-neutral-200 bg-neutral-50 px-4 py-2 dark:border-neutral-700 dark:bg-neutral-900"
-      >
-        <input
+      <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="Message Orca..."
           disabled={disabled}
           className="flex-1 bg-transparent text-sm text-neutral-900 placeholder-neutral-500 outline-none dark:text-neutral-100 dark:placeholder-neutral-400 disabled:opacity-50"
-        />
-        <button
+      />
+      <button
           type="submit"
           disabled={disabled || !value.trim()}
           className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
-        >
-          Send
-        </button>
-      </form>
-    </motion.div>
+      >
+        Send
+      </button>
+    </motion.form>
   );
 }

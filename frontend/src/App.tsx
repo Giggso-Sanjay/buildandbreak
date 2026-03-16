@@ -13,6 +13,9 @@ import { isMLPerformanceQuery } from "./hooks/useMLQueryDetection";
 const TRINITY_PROMPT =
   "Please provide the necessary Datadrift and Observability files from Trinity to proceed.";
 
+const NO_DATASOURCE_PROMPT =
+  "Please upload a datasource before sending a query.";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -63,8 +66,26 @@ export default function App() {
     });
   }, []);
 
+  const handleClearSession = useCallback(() => {
+    setUploadedFiles([]);
+    setMessages([]);
+  }, []);
+
   const handleSend = useCallback(
     async (text: string) => {
+      // Block if no datasource uploaded
+      if (uploadedFiles.length === 0) {
+        setMessages((prev) => [
+          ...prev,
+          { id: crypto.randomUUID(), role: "user", content: text },
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: NO_DATASOURCE_PROMPT,
+          },
+        ]);
+        return;
+      }
       // Trinity validation: if ML query, require both files
       if (isMLPerformanceQuery(text) && !hasDatadriftAndObservability) {
         setMessages((prev) => [
@@ -110,7 +131,7 @@ export default function App() {
         setIsLoading(false);
       }
     },
-    [hasDatadriftAndObservability]
+    [uploadedFiles.length, hasDatadriftAndObservability]
   );
 
   return (
@@ -124,7 +145,7 @@ export default function App() {
             className="flex min-h-screen flex-col bg-neutral-50 dark:bg-neutral-950"
           >
             <Header onUploadClick={() => setUploadModalOpen(true)} />
-            <main className="flex-1 overflow-y-auto pb-24 pt-4">
+            <main className="flex-1 overflow-y-auto pb-20 pt-4">
               <div className="mx-auto max-w-3xl">
                 <AnimatePresence>
                   {messages.map((m, i) => (
@@ -139,7 +160,20 @@ export default function App() {
                 </AnimatePresence>
               </div>
             </main>
-            <ChatInput onSend={handleSend} disabled={isLoading} />
+            <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center gap-4 border-t border-neutral-200 bg-white/80 px-4 py-4 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-950/80">
+              {/* Clear session - left bottom */}
+              <button
+                type="button"
+                onClick={handleClearSession}
+                className="shrink-0 rounded-full border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+              >
+                Clear session
+              </button>
+              {/* Input bar - centered in remaining space */}
+              <div className="flex flex-1 justify-center min-w-0">
+                <ChatInput onSend={handleSend} disabled={isLoading} />
+              </div>
+            </div>
           </div>
         )}
       </AnimatePresence>
