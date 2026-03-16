@@ -1,0 +1,274 @@
+{
+    "model_info": {
+        "name": "Income Prediction",
+        "type": "classification",
+        "provider": "AWS",
+        "version": "1.0",
+        "data_environment": "Production",
+        "tags": "Income Prediction,Provider: AWS,Version: 1.0,Data: Production"
+    },
+    "performance_metrics": {
+        "current": {
+            "accuracy": 0.844,
+            "precision": 0.6923076923076923,
+            "recall": 0.6101694915254238,
+            "f1": 0.6486486486486487,
+            "auc": 0.7631999290087853,
+            "specificity": 0.9162303664921466
+        },
+        "reference": {
+            "accuracy": 0.9139344262295082,
+            "precision": 0.9158415841584159,
+            "recall": 0.7341269841269841,
+            "f1": 0.8149779735682819
+        },
+        "performance_message": "Retrain model as current model accuracy(0.844) has decreased as compared to reference model accuracy(0.914).",
+        "severity": "critical"
+    },
+    "confusion_matrix": {
+        "raw": [
+            [
+                175,
+                16
+            ],
+            [
+                23,
+                36
+            ]
+        ],
+        "labels": {
+            "true_negatives": 175,
+            "false_positives": 16,
+            "false_negatives": 23,
+            "true_positives": 36
+        },
+        "derived": {
+            "total_samples": 250,
+            "false_positive_rate": 0.08376963350785341,
+            "false_negative_rate": 0.3898305084745763,
+            "true_positive_rate": 0.6101694915254238,
+            "true_negative_rate": 0.9162303664921466
+        }
+    },
+    "calibration": {
+        "mean_predicted_value": [
+            0.0258,
+            0.3636,
+            0.5263,
+            0.6364,
+            0.9048
+        ],
+        "fraction_of_positives": [
+            0.0526,
+            0.2951,
+            0.5056,
+            0.6901,
+            0.9510
+        ],
+        "calibration_error": 0.0236
+    },
+    "roc_curve": {
+        "false_positive_rate": [
+            0.0,
+            0.0,
+            0.0,
+            0.00524,
+            0.00524,
+            0.01047
+        ],
+        "true_positive_rate": [
+            0.0,
+            0.01695,
+            0.22034,
+            0.22034,
+            0.32203,
+            0.32203
+        ]
+    },
+    "pr_curve": {
+        "recall": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+        ],
+        "precision": [
+            0.236,
+            0.23695,
+            0.2379,
+            0.23887,
+            0.23984,
+            0.24082
+        ]
+    },
+    "data_drift": {
+        "drift_detected": true,
+        "severity": "warning",
+        "drifted_features_count": 3,
+        "total_features_count": 14,
+        "drift_percentage": 21.43,
+        "drifted_features": [
+            "country",
+            "occupation",
+            "race"
+        ],
+        "message": "Data drift detected in 3 of 14 features (21.43%)"
+    },
+    "target_drift": {
+        "drift_detected": false,
+        "severity": "info",
+        "target_pvalue": 0.4717,
+        "message": "Target Drift: not detected, drift score=0.4717 (Z-test p_value)."
+    },
+    "bias_report": {
+        "bias_detected": true,
+        "severity": "critical",
+        "biased_features_count": 1,
+        "total_features_count": 1,
+        "bias_percentage": 100.0,
+        "biased_columns": [
+            "income"
+        ],
+        "protected_attribute": "income",
+        "privileged_group": "0",
+        "unprivileged_group": "1",
+        "accuracy_without_mitigation": 0.76,
+        "message": "Bias detected in 100% of features. 4 out of 5 metrics flag bias against unprivileged group.",
+        "metrics": [
+            {
+                "name": "statistical_parity_difference",
+                "value": -0.5264,
+                "fair_range": [
+                    -0.1,
+                    0.1
+                ],
+                "is_biased": true,
+                "info": "Difference in favorable outcome rates. Ideal=0. Fair range: -0.1 to 0.1."
+            },
+            {
+                "name": "disparate_impact",
+                "value": 0.1373,
+                "fair_range": [
+                    0.8,
+                    1.25
+                ],
+                "is_biased": true,
+                "info": "Ratio of favorable outcome rates. Ideal=1.0. Fair range: 0.8 to 1.25."
+            },
+            {
+                "name": "average_odds_difference",
+                "value": 0.0,
+                "fair_range": [
+                    -0.1,
+                    0.1
+                ],
+                "is_biased": false,
+                "info": "Average difference of FPR and TPR between groups. Ideal=0. Fair range: -0.1 to 0.1."
+            },
+            {
+                "name": "equal_opportunity_difference",
+                "value": 0.0,
+                "fair_range": [
+                    -0.1,
+                    0.1
+                ],
+                "is_biased": false,
+                "info": "Difference in true positive rates. Ideal=0. Fair range: -0.1 to 0.1."
+            },
+            {
+                "name": "theil_index",
+                "value": 0.1197,
+                "fair_range": [
+                    0.0,
+                    0.1
+                ],
+                "is_biased": true,
+                "info": "Generalized entropy of benefit. Ideal=0. Lower is fairer."
+            }
+        ]
+    },
+    "data_quality": {
+        "total_checks": 151,
+        "passed": 32,
+        "failed": 119,
+        "pass_percentage": 21.19,
+        "severity": "critical",
+        "message": "Quality Checks: less than 25% of checks passed for Income Prediction.",
+        "recommended_action": "Analyse the current data and remediate quality issues.",
+        "data_source": "s3://sagemaker-us-west-2-740417642617/testingxai/demo/1kCurrentIncomeData.csv"
+    },
+    "data_freshness": {
+        "is_fresh": true,
+        "severity": "info",
+        "message": "Dataset Freshness Detected. New data has been refreshed for Income Prediction.",
+        "data_source": "s3://sagemaker-us-west-2-740417642617/testingxai/demo/1kCurrentIncomeData.csv"
+    },
+    "data_integrity": {
+        "severity": "info",
+        "report_generated": true,
+        "message": "Integrity Report Generated for the Dataset for Income Prediction."
+    },
+    "data_schema": {
+        "records_count": 250,
+        "columns_count": 14,
+        "dataset_size_mb": 0.028144,
+        "column_names": [
+            "age",
+            "workclass",
+            "fnlwgt",
+            "education",
+            "education-num",
+            "marital-status",
+            "occupation",
+            "relationship",
+            "race",
+            "gender",
+            "capital-gain",
+            "capital-loss",
+            "hours-per-week",
+            "country"
+        ]
+    },
+    "feature_importance": {
+        "permutation": {
+            "capital-gain": 0.0552,
+            "capital-loss": 0.0112,
+            "education-num": 0.0108,
+            "age": 0.0048,
+            "occupation": 0.0048,
+            "education": 0.0032,
+            "gender": 0.0012,
+            "race": -0.0004,
+            "country": -0.0004,
+            "marital-status": -0.0024,
+            "fnlwgt": -0.0056,
+            "hours-per-week": -0.0056,
+            "workclass": -0.0068,
+            "relationship": -0.012
+        },
+        "shap": {
+            "age": 0.0589,
+            "relationship": 0.0495,
+            "capital-gain": 0.0491,
+            "marital-status": 0.0470,
+            "education-num": 0.0372,
+            "hours-per-week": 0.0253,
+            "occupation": 0.0175,
+            "fnlwgt": 0.0105,
+            "capital-loss": 0.0072,
+            "workclass": 0.0043,
+            "race": 0.0043,
+            "education": 0.0040,
+            "gender": 0.0023,
+            "country": 0.0009
+        }
+    },
+    "explainability": {
+        "provider": "EXPLAINABILITY",
+        "monitoring_type": "explainability",
+        "severity": "info",
+        "message": "Evaluation and explanation metrics have been generated successfully."
+    }
+}
