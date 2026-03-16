@@ -121,7 +121,37 @@ async def list_tools() -> List[Tool]:
             ),
             inputSchema={
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "description": "Which model pipeline to use: 'classic' for traditional ML models, 'llm' for LLM-based models evaluated via firewall + observability JSONs.",
+                        "enum": ["classic", "llm"],
+                    },
+                    "model_id": {
+                        "type": "string",
+                        "description": "Optional model identifier or version (for reporting).",
+                    },
+                    "model_type": {
+                        "type": "string",
+                        "description": "Optional model type label to include in the response (e.g., 'classic', 'llm').",
+                    },
+                    "firewall_path": {
+                        "type": "string",
+                        "description": "Optional path to the LLM firewall JSON file. If omitted in LLM mode, a default mlinsight path is used.",
+                    },
+                    "observability_path": {
+                        "type": "string",
+                        "description": "Optional path to the LLM observability JSON file. If omitted in LLM mode, a default mlinsight path is used.",
+                    },
+                    "performance_path": {
+                        "type": "string",
+                        "description": "Optional path to the LLM performance JSON file. If omitted in LLM mode, a default mlinsight path is used.",
+                    },
+                    "clarity_path": {
+                        "type": "string",
+                        "description": "Optional path to the LLM clarity JSON file. If omitted in LLM mode, a default mlinsight path is used.",
+                    },
+                },
                 "required": [],
             },
         ),
@@ -196,7 +226,18 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> CallToolResult:
             text = get_feature_importance(method)
 
         elif name == "assess_deployment_risk":
-            text = assess_deployment_risk()
+            mode = str(arguments.get("mode", "classic"))
+            model_id = arguments.get("model_id")
+            model_type = arguments.get("model_type")
+            text = assess_deployment_risk(
+                mode=mode,
+                model_id=model_id,
+                model_type=model_type,
+                firewall_path=arguments.get("firewall_path"),
+                observability_path=arguments.get("observability_path"),
+                performance_path=arguments.get("performance_path"),
+                clarity_path=arguments.get("clarity_path"),
+            )
 
         elif name == "explain_metric":
             metric_name = str(arguments.get("metric_name", ""))

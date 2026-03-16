@@ -280,12 +280,18 @@ def get_feature_importance(method: str = "shap") -> str:
     return json.dumps(result, indent=2)
 
 
-# ─── TOOL 6: DEPLOYMENT RISK ENGINE ⭐ ───────────────────────────────────────
+_MLINSIGHT_DIR = Path(__file__).resolve().parent.parent / "mlinsight"
 
-def assess_deployment_risk() -> str:
+
+# ─── CLASSIC MODEL DEPLOYMENT RISK ENGINE ⭐ ─────────────────────────────────
+
+def _assess_classic_deployment_risk(
+    model_id: Optional[str] = None,
+    model_type: str = "classic",
+) -> Dict[str, Any]:
     """
-    THE CORE TOOL — Computes deployment risk score across 6 dimensions,
-    makes a go/no-go decision, and generates recommended actions.
+    THE CORE TOOL for classic ML models — Computes deployment risk score across 6
+    dimensions, makes a go/no-go decision, and generates recommended actions.
     """
     kb = _load_kb()
     perf = kb["performance_metrics"]
@@ -404,7 +410,9 @@ def assess_deployment_risk() -> str:
         summary += "Key concerns: " + "; ".join(risk_details) + "."
 
     # ─── Build output ───
-    result = {
+    result: Dict[str, Any] = {
+        "model_type": model_type,
+        "model_id": model_id or kb["model_info"].get("name"),
         "deployment_decision": decision,
         "risk_score": risk_score,
         "risk_dimensions": {
@@ -443,6 +451,230 @@ def assess_deployment_risk() -> str:
         "recommended_actions": actions,
         "plain_language_summary": summary
     }
+
+    return result
+
+
+def _safe_load_json(path: Path) -> Dict[str, Any]:
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"error": f"file_not_found", "path": str(path)}
+    except json.JSONDecodeError as exc:
+        return {"error": f"invalid_json", "path": str(path), "detail": str(exc)}
+
+
+def _compute_firewall_risk(firewall: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Derive a scalar firewall risk score in [0, 1] from the firewall JSON.
+
+    Heuristic:
+    - Count how many safety monitors (injection, toxicity, jailbreak, privacy)
+      report a concerning status.
+    - Risk score = issues / total_monitors.
+    """
+    monitoring = firewall.get("monitoringTypes", {})
+    issues = 0
+    total = 0
+    details: List[str] = []
+
+    # Injection
+    injection = monitoring.get("injection")
+    if injection:
+        total += 1
+        prompt_items = injection.get("prompt", [])
+        has_issue = any(
+            (item.get("status") or "").lower() not in ("not-injection", "")
+            for item in prompt_items
+        )
+        if has_issue:
+            issues += 1
+            details.append("Prompt injection patterns detected.")
+
+    # Jailbreak
+    jailbreak = monitoring.get("jailbreak")
+    if jailbreak:
+        total += 1
+        prompt_items = jailbreak.get("prompt", [])
+        has_issue = any(
+            (item.get("status") or "").lower() not in ("not-jailbreak", "")
+            for item in prompt_items
+        )
+        if has_issue:
+            issues += 1
+            details.append("Jailbreak-like behavior detected.")
+
+    # Toxicity
+    toxicity = monitoring.get("toxicity")
+    if toxicity:
+        total += 1
+        all_items = toxicity.get("prompt", []) + toxicity.get("response", [])
+        has_issue = any(
+            "toxic" in (item.get("status") or "").lower()
+            for item in all_items
+        )
+        if has_issue:
+            issues += 1
+            details.append("Toxic or unsafe language detected.")
+
+    # Privacy
+    privacy = monitoring.get("privacyCheck")
+    if privacy:
+        total += 1
+        all_items = privacy.get("prompt", []) + privacy.get("response", [])
+        has_issue = any(bool(item.get("status")) for item in all_items)
+        if has_issue:
+            issues += 1
+            details.append("Privacy risk detected in prompts or responses.")
+
+    if total == 0:
+        # Fallback: if structure is missing, treat as medium risk but explain
+        return {
+            "score": 0.5,
+            "details": ["Firewall JSON did not contain expected monitoringTypes; defaulting to medium risk."],
+        }
+
+    score = issues / total
+    return {
+        "score": round(float(score), 4),
+        "details": details,
+    }
+
+
+def _assess_llm_deployment_risk(
+    model_id: Optional[str] = None,
+    model_type: str = "llm",
+    firewall_path: Optional[str] = None,
+    observability_path: Optional[str] = None,
+    performance_path: Optional[str] = None,
+    clarity_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    LLM Deployment Risk: firewall is the primary risk driver, other JSONs
+    (observability, performance, clarity) are used as auxiliary context.
+
+    If explicit file paths are not provided, defaults to known filenames in the
+    mlinsight/ directory. When provided, paths may be absolute or relative to
+    the project root.
+    """
+    base = _MLINSIGHT_DIR
+
+    fw_path_obj = Path(firewall_path) if firewall_path else base / "llm_firewall_llm_firewall_2026-03-13_165518.json"
+    obs_path_obj = Path(observability_path) if observability_path else base / "llm_observability_llm_observability_2026-03-13_165547.json"
+    perf_path_obj = Path(performance_path) if performance_path else base / "llm_llm_performance_2026-03-13_165807.json"
+    clar_path_obj = Path(clarity_path) if clarity_path else base / "llm_llm_clarity_2026-03-13_170007.json"
+
+    firewall_raw = _safe_load_json(fw_path_obj)
+    observability_raw = _safe_load_json(obs_path_obj)
+    performance_raw = _safe_load_json(perf_path_obj)
+    clarity_raw = _safe_load_json(clar_path_obj)
+
+    firewall_info = _compute_firewall_risk(firewall_raw)
+    firewall_score = firewall_info["score"]
+
+    # Overall risk is driven purely by firewall score
+    risk_score = firewall_score
+    if risk_score >= 0.7:
+        decision = "DO_NOT_DEPLOY"
+    elif risk_score >= 0.3:
+        decision = "CAUTION"
+    else:
+        decision = "SAFE"
+
+    key_risks: List[str] = []
+    key_risks.extend(firewall_info.get("details", []))
+
+    # Look for hallucination failures in clarity report
+    try:
+        hallucination = clarity_raw.get("score", {}).get("hallucination", {})
+        for res in hallucination.get("results", []):
+            if (res.get("status") or "").lower() == "failed":
+                reason = res.get("reason") or "Hallucination detected in LLM response."
+                key_risks.append(reason)
+    except Exception:
+        pass
+
+    # Look for major metric misalignment in performance report (very low text similarity)
+    try:
+        perf_scores = performance_raw.get("score", {})
+        bleurt_overall = perf_scores.get("bleurtScore", {}).get("overallAnalysis", {}).get("bleurtScore")
+        meteor_overall = perf_scores.get("meteorScore", {}).get("overallAnalysis", {}).get("meteorScore")
+        rouge1_overall = perf_scores.get("rouge1Score", {}).get("overallAnalysis", {}).get("rouge1Score")
+        if bleurt_overall is not None and bleurt_overall < 0.2:
+            key_risks.append(f"Very low BLEURT similarity score ({bleurt_overall:.3f}) indicates weak alignment with ground truth.")
+        if meteor_overall is not None and meteor_overall < 0.2:
+            key_risks.append(f"Low METEOR score ({meteor_overall:.3f}) suggests mismatched phrasing or content.")
+        if rouge1_overall is not None and rouge1_overall < 0.3:
+            key_risks.append(f"Low ROUGE-1 score ({rouge1_overall:.3f}) indicates poor lexical overlap with ground truth.")
+    except Exception:
+        pass
+
+    # Build auxiliary metrics bundle (kept raw so the LLM can explain them)
+    auxiliary_metrics: Dict[str, Any] = {
+        "observability": observability_raw,
+        "performance": performance_raw,
+        "clarity": clarity_raw,
+        "firewall_raw": firewall_raw,
+    }
+
+    if decision == "DO_NOT_DEPLOY":
+        summary = f"This LLM is NOT safe to deploy based on firewall evaluation. Risk score (firewall-driven): {risk_score}/1.0."
+    elif decision == "CAUTION":
+        summary = f"LLM deployment requires caution. Risk score (firewall-driven): {risk_score}/1.0."
+    else:
+        summary = f"LLM appears safe to deploy with current firewall signals. Risk score (firewall-driven): {risk_score}/1.0."
+
+    if key_risks:
+        summary += " Key concerns: " + "; ".join(key_risks) + "."
+
+    result: Dict[str, Any] = {
+        "model_type": model_type,
+        "model_id": model_id,
+        "deployment_decision": decision,
+        "risk_score": round(float(risk_score), 4),
+        "firewall_score": round(float(firewall_score), 4),
+        "primary_risks": key_risks,
+        "auxiliary_metrics": auxiliary_metrics,
+        "plain_language_summary": summary,
+    }
+    return result
+
+
+# ─── PUBLIC ENTRYPOINT: DEPLOYMENT RISK ENGINE ───────────────────────────────
+
+def assess_deployment_risk(
+    mode: str = "classic",
+    model_id: Optional[str] = None,
+    model_type: Optional[str] = None,
+    firewall_path: Optional[str] = None,
+    observability_path: Optional[str] = None,
+    performance_path: Optional[str] = None,
+    clarity_path: Optional[str] = None,
+) -> str:
+    """
+    Unified deployment risk entrypoint.
+
+    - mode="classic": use classic ML metrics from ml_knowledge_base.json
+    - mode="llm":     use LLM firewall as primary risk factor and
+                      mlinsight/*.json as auxiliary observability data
+    """
+    mode_normalized = (mode or "classic").lower()
+
+    if mode_normalized == "llm":
+        result = _assess_llm_deployment_risk(
+            model_id=model_id,
+            model_type=model_type or "llm",
+            firewall_path=firewall_path,
+            observability_path=observability_path,
+            performance_path=performance_path,
+            clarity_path=clarity_path,
+        )
+    else:
+        result = _assess_classic_deployment_risk(
+            model_id=model_id,
+            model_type=model_type or "classic",
+        )
 
     return json.dumps(result, indent=2)
 
