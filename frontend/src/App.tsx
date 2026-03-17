@@ -1,5 +1,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence } from "framer-motion";
+
+/**
+ * Fallback for crypto.randomUUID()
+ * crypto.randomUUID() is only available in Secure Contexts (HTTPS or localhost).
+ * AWS deployments over HTTP will crash without this fallback.
+ */
+function generateUUID() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 import { WelcomeScreen } from "./components/WelcomeScreen";
 import { Header } from "./components/Header";
 import { ChatMessage } from "./components/ChatMessage";
@@ -69,7 +85,7 @@ export default function App() {
           setMessages((prev) => [
             ...prev,
             {
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               role: "assistant",
               content: `⚠️ **Upload Failed**: ${res.message}`,
             },
@@ -99,9 +115,9 @@ export default function App() {
       if (uploadedFiles.length === 0) {
         setMessages((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: "user", content: text },
+          { id: generateUUID(), role: "user", content: text },
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: NO_DATASOURCE_PROMPT,
           },
@@ -112,9 +128,9 @@ export default function App() {
       if (isMLPerformanceQuery(text) && !hasKB) {
         setMessages((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: "user", content: text },
+          { id: generateUUID(), role: "user", content: text },
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: KB_PROMPT,
           },
@@ -123,7 +139,7 @@ export default function App() {
       }
 
       const userMsg: Message = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         role: "user",
         content: text,
       };
@@ -146,7 +162,7 @@ export default function App() {
         setMessages((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: res.reply,
           },
@@ -155,7 +171,7 @@ export default function App() {
         setMessages((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: `Error: ${err instanceof Error ? err.message : "Failed to get response"}`,
           },
