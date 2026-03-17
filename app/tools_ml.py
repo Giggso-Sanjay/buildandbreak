@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Resolve knowledge base path relative to project root
-_KB_PATH = Path(__file__).resolve().parent.parent / "ml_knowledge_base.json"
+_KB_PATH = Path(__file__).resolve().parent / "ml_knowledge_base.json"
 
 
 def _load_kb() -> Dict[str, Any]:
@@ -110,30 +110,32 @@ METRIC_DEFINITIONS = {
 def get_model_performance() -> str:
     """Return current and reference model performance metrics with deltas."""
     kb = _load_kb()
-    perf = kb["performance_metrics"]
-    cm = kb["confusion_matrix"]
+    perf = kb.get("performance_metrics", {})
+    cm = kb.get("confusion_matrix", {})
 
-    current = perf["current"]
+    current = perf.get("current", {})
     reference = perf.get("reference", {})
 
     # Compute deltas
     deltas = {}
     for key in ["accuracy", "precision", "recall", "f1"]:
-        if key in reference:
-            delta = current[key] - reference[key]
+        curr_val = current.get(key)
+        ref_val = reference.get(key)
+        if isinstance(curr_val, (int, float)) and isinstance(ref_val, (int, float)):
+            delta = curr_val - ref_val
             deltas[key] = round(delta, 4)
 
     result = {
-        "model_name": kb["model_info"]["name"],
-        "model_type": kb["model_info"]["type"],
-        "current_metrics": {k: round(v, 4) for k, v in current.items()},
-        "reference_metrics": {k: round(v, 4) for k, v in reference.items()},
+        "model_name": kb.get("model_info", {}).get("name", "Unknown"),
+        "model_type": kb.get("model_info", {}).get("type", "Unknown"),
+        "current_metrics": {k: (round(v, 4) if v is not None else "data not provided") for k, v in current.items()},
+        "reference_metrics": {k: (round(v, 4) if v is not None else "data not provided") for k, v in reference.items()},
         "deltas": deltas,
-        "confusion_matrix": cm["labels"],
-        "false_positive_rate": round(cm["derived"]["false_positive_rate"], 4),
-        "false_negative_rate": round(cm["derived"]["false_negative_rate"], 4),
-        "severity": perf["severity"],
-        "message": perf["performance_message"]
+        "confusion_matrix": cm.get("labels", {}),
+        "false_positive_rate": round(cm.get("derived", {}).get("false_positive_rate", 0), 4) if cm.get("derived", {}).get("false_positive_rate") is not None else "data not provided",
+        "false_negative_rate": round(cm.get("derived", {}).get("false_negative_rate", 0), 4) if cm.get("derived", {}).get("false_negative_rate") is not None else "data not provided",
+        "severity": perf.get("severity", "info"),
+        "message": perf.get("performance_message", "No performance message available.")
     }
     return json.dumps(result, indent=2)
 
@@ -149,25 +151,25 @@ def get_drift_report(drift_type: str = "data") -> str:
     kb = _load_kb()
 
     if drift_type == "target":
-        td = kb["target_drift"]
+        td = kb.get("target_drift", {})
         result = {
             "drift_type": "target",
-            "drift_detected": td["drift_detected"],
-            "severity": td["severity"],
-            "p_value": td["target_pvalue"],
-            "message": td["message"]
+            "drift_detected": td.get("drift_detected", False),
+            "severity": td.get("severity", "info"),
+            "p_value": td.get("target_pvalue", "data not provided"),
+            "message": td.get("message", "No target drift message available.")
         }
     else:
-        dd = kb["data_drift"]
+        dd = kb.get("data_drift", {})
         result = {
             "drift_type": "data",
-            "drift_detected": dd["drift_detected"],
-            "severity": dd["severity"],
-            "drifted_features_count": dd["drifted_features_count"],
-            "total_features_count": dd["total_features_count"],
-            "drift_percentage": dd["drift_percentage"],
-            "drifted_features": dd["drifted_features"],
-            "message": dd["message"]
+            "drift_detected": dd.get("drift_detected", False),
+            "severity": dd.get("severity", "info"),
+            "drifted_features_count": dd.get("drifted_features_count", 0),
+            "total_features_count": dd.get("total_features_count", 0),
+            "drift_percentage": dd.get("drift_percentage", 0),
+            "drifted_features": dd.get("drifted_features", []),
+            "message": dd.get("message", "No data drift message available.")
         }
 
     return json.dumps(result, indent=2)
@@ -178,32 +180,32 @@ def get_drift_report(drift_type: str = "data") -> str:
 def get_bias_report() -> str:
     """Return fairness and bias metrics with verdicts."""
     kb = _load_kb()
-    bias = kb["bias_report"]
+    bias = kb.get("bias_report", {})
 
     result = {
-        "bias_detected": bias["bias_detected"],
-        "severity": bias["severity"],
-        "biased_columns": bias["biased_columns"],
-        "protected_attribute": bias["protected_attribute"],
-        "privileged_group": bias["privileged_group"],
-        "unprivileged_group": bias["unprivileged_group"],
-        "accuracy_without_mitigation": bias["accuracy_without_mitigation"],
-        "message": bias["message"],
+        "bias_detected": bias.get("bias_detected", False),
+        "severity": bias.get("severity", "info"),
+        "biased_columns": bias.get("biased_columns", []),
+        "protected_attribute": bias.get("protected_attribute", "Unknown"),
+        "privileged_group": bias.get("privileged_group", "Unknown"),
+        "unprivileged_group": bias.get("unprivileged_group", "Unknown"),
+        "accuracy_without_mitigation": bias.get("accuracy_without_mitigation", "data not provided"),
+        "message": bias.get("message", "No bias message available."),
         "metrics": []
     }
 
-    for m in bias["metrics"]:
+    for m in bias.get("metrics", []):
         result["metrics"].append({
-            "name": m["name"],
-            "value": round(m["value"], 4),
-            "fair_range": m["fair_range"],
-            "is_biased": m["is_biased"],
-            "verdict": "BIASED" if m["is_biased"] else "FAIR",
-            "explanation": m["info"]
+            "name": m.get("name", "Unknown"),
+            "value": round(m["value"], 4) if m.get("value") is not None else "data not provided",
+            "fair_range": m.get("fair_range", []),
+            "is_biased": m.get("is_biased", False),
+            "verdict": "BIASED" if m.get("is_biased") else "FAIR",
+            "explanation": m.get("info", "")
         })
 
-    biased_count = sum(1 for m in bias["metrics"] if m["is_biased"])
-    result["summary"] = f"{biased_count} of {len(bias['metrics'])} fairness metrics flag bias."
+    biased_count = sum(1 for m in bias.get("metrics", []) if m.get("is_biased"))
+    result["summary"] = f"{biased_count} of {len(bias.get('metrics', []))} fairness metrics flag bias."
 
     return json.dumps(result, indent=2)
 
@@ -213,34 +215,34 @@ def get_bias_report() -> str:
 def get_data_quality_report() -> str:
     """Return data quality check summary with severity and recommendations."""
     kb = _load_kb()
-    dq = kb["data_quality"]
-    df = kb["data_freshness"]
-    di = kb["data_integrity"]
-    ds = kb["data_schema"]
+    dq = kb.get("data_quality", {})
+    df = kb.get("data_freshness", {})
+    di = kb.get("data_integrity", {})
+    ds = kb.get("data_schema", {})
 
     result = {
         "quality_checks": {
-            "total": dq["total_checks"],
-            "passed": dq["passed"],
-            "failed": dq["failed"],
-            "pass_percentage": dq["pass_percentage"],
-            "severity": dq["severity"],
-            "message": dq["message"],
-            "recommended_action": dq["recommended_action"]
+            "total": dq.get("total_checks", 0),
+            "passed": dq.get("passed", 0),
+            "failed": dq.get("failed", 0),
+            "pass_percentage": dq.get("pass_percentage", 0),
+            "severity": dq.get("severity", "info"),
+            "message": dq.get("message", "No quality message available."),
+            "recommended_action": dq.get("recommended_action", "No recommendation.")
         },
         "data_freshness": {
-            "is_fresh": df["is_fresh"],
-            "message": df["message"]
+            "is_fresh": df.get("is_fresh", False),
+            "message": df.get("message", "No freshness message available.")
         },
         "data_integrity": {
-            "report_generated": di["report_generated"],
-            "message": di["message"]
+            "report_generated": di.get("report_generated", False),
+            "message": di.get("message", "No integrity message available.")
         },
         "data_schema": {
-            "records": ds["records_count"],
-            "columns": ds["columns_count"],
-            "size_mb": ds["dataset_size_mb"],
-            "column_names": ds["column_names"]
+            "records": ds.get("records_count", "data not provided"),
+            "columns": ds.get("columns_count", "data not provided"),
+            "size_mb": ds.get("dataset_size_mb", "data not provided"),
+            "column_names": ds.get("column_names", [])
         }
     }
     return json.dumps(result, indent=2)
@@ -255,27 +257,27 @@ def get_feature_importance(method: str = "shap") -> str:
         method: Either 'shap' for SHAP values or 'importance' for permutation importance.
     """
     kb = _load_kb()
-    fi = kb["feature_importance"]
+    fi = kb.get("feature_importance", {})
 
     if method == "importance":
-        data = fi["permutation"]
+        data = fi.get("permutation", {})
         method_name = "Permutation Importance"
     else:
-        data = fi["shap"]
+        data = fi.get("shap", {})
         method_name = "SHAP Global Attribution"
 
     # Sort by absolute value descending
-    sorted_features = sorted(data.items(), key=lambda x: abs(x[1]), reverse=True)
+    sorted_features = sorted(data.items(), key=lambda x: abs(x[1]) if isinstance(x[1], (int, float)) else 0, reverse=True)
 
     result = {
         "method": method_name,
-        "model_name": kb["model_info"]["name"],
+        "model_name": kb.get("model_info", {}).get("name", "Unknown"),
         "rankings": [
-            {"rank": i + 1, "feature": feat, "score": round(score, 6)}
+            {"rank": i + 1, "feature": feat, "score": round(score, 6) if isinstance(score, (int, float)) else score}
             for i, (feat, score) in enumerate(sorted_features)
         ],
         "top_3": [feat for feat, _ in sorted_features[:3]],
-        "insight": f"Top 3 most influential features: {', '.join(f for f, _ in sorted_features[:3])}"
+        "insight": f"Top 3 most influential features: {', '.join(f for f, _ in sorted_features[:3])}" if sorted_features else "No feature importance data available."
     }
     return json.dumps(result, indent=2)
 
@@ -288,36 +290,36 @@ def assess_deployment_risk() -> str:
     makes a go/no-go decision, and generates recommended actions.
     """
     kb = _load_kb()
-    perf = kb["performance_metrics"]
-    cm = kb["confusion_matrix"]
-    bias = kb["bias_report"]
-    drift = kb["data_drift"]
-    quality = kb["data_quality"]
-    cal = kb["calibration"]
+    perf = kb.get("performance_metrics", {})
+    cm = kb.get("confusion_matrix", {})
+    bias = kb.get("bias_report", {})
+    drift = kb.get("data_drift", {})
+    quality = kb.get("data_quality", {})
+    cal = kb.get("calibration", {})
 
     # ─── Compute risk dimensions ───
 
     # 1. Operational cost risk (false negative rate)
-    fnr = cm["derived"]["false_negative_rate"]
+    fnr = cm.get("derived", {}).get("false_negative_rate", 0)
     operational_risk = min(fnr, 1.0)
 
     # 2. Predictive reliability (1 - AUC)
-    auc = perf["current"]["auc"]
+    auc = perf.get("current", {}).get("auc", 0.5)  # Assume 0.5 (random) if missing
     predictive_risk = 1.0 - auc
 
     # 3. Confidence reliability (calibration error)
-    calibration_risk = min(cal["calibration_error"] * 5, 1.0)  # scale up, cap at 1
+    calibration_risk = min(cal.get("calibration_error", 0) * 5, 1.0)  # scale up, cap at 1
 
     # 4. Fairness/Bias risk
-    biased_count = sum(1 for m in bias["metrics"] if m["is_biased"])
-    total_bias_metrics = len(bias["metrics"])
+    biased_count = sum(1 for m in bias.get("metrics", []) if m.get("is_biased"))
+    total_bias_metrics = len(bias.get("metrics", []))
     bias_risk = biased_count / total_bias_metrics if total_bias_metrics > 0 else 0
 
     # 5. Data drift risk
-    drift_risk = drift["drift_percentage"] / 100.0
+    drift_risk = drift.get("drift_percentage", 0) / 100.0
 
     # 6. Data quality risk
-    quality_risk = 1.0 - (quality["pass_percentage"] / 100.0)
+    quality_risk = 1.0 - (quality.get("pass_percentage", 100) / 100.0)
 
     # ─── Weighted risk score ───
     risk_score = (
@@ -346,24 +348,27 @@ def assess_deployment_risk() -> str:
         primary_risks.append("low_auc_score")
     if bias_risk > 0.5:
         primary_risks.append("bias_in_protected_features")
-    if drift["drift_detected"]:
+    if drift.get("drift_detected"):
         primary_risks.append("data_drift_detected")
-    if quality["pass_percentage"] < 50:
+    if quality.get("pass_percentage", 100) < 50:
         primary_risks.append("data_quality_failures")
-    if perf["current"]["accuracy"] < perf.get("reference", {}).get("accuracy", 0) - 0.05:
+    
+    cur_acc = perf.get("current", {}).get("accuracy")
+    ref_acc = perf.get("reference", {}).get("accuracy")
+    if cur_acc is not None and ref_acc is not None and cur_acc < ref_acc - 0.05:
         primary_risks.append("significant_accuracy_degradation")
-    if cal["calibration_error"] > 0.05:
+    
+    if cal.get("calibration_error", 0) > 0.05:
         primary_risks.append("poor_calibration")
 
     # ─── Recommended actions ───
     actions = []
-    ref_acc = perf.get("reference", {}).get("accuracy", 0)
-    cur_acc = perf["current"]["accuracy"]
-    if cur_acc < ref_acc - 0.05:
+    if cur_acc is not None and ref_acc is not None and cur_acc < ref_acc - 0.05:
         drop = round((ref_acc - cur_acc) * 100, 1)
         actions.append(f"Retrain model — accuracy dropped {drop}% from reference ({round(ref_acc*100,1)}% → {round(cur_acc*100,1)}%)")
 
-    if perf["current"]["recall"] < 0.7:
+    cur_recall = perf.get("current", {}).get("recall")
+    if cur_recall is not None and cur_recall < 0.7:
         actions.append("Adjust classification threshold to improve recall — currently missing too many positive cases")
 
     if fnr > 0.3:
@@ -372,14 +377,15 @@ def assess_deployment_risk() -> str:
     if bias_risk > 0.5:
         actions.append(f"Run fairness audit — bias detected in {biased_count}/{total_bias_metrics} metrics against unprivileged group")
 
-    if drift["drift_detected"]:
-        features = ", ".join(drift["drifted_features"])
+    if drift.get("drift_detected"):
+        features = ", ".join(drift.get("drifted_features", []))
         actions.append(f"Investigate drifted features before deployment: {features}")
 
-    if quality["pass_percentage"] < 50:
-        actions.append(f"Fix data quality — only {quality['pass_percentage']}% of {quality['total_checks']} checks passing")
+    pass_pct = quality.get("pass_percentage")
+    if pass_pct is not None and pass_pct < 50:
+        actions.append(f"Fix data quality — only {pass_pct}% of {quality.get('total_checks', 0)} checks passing")
 
-    if cal["calibration_error"] > 0.05:
+    if cal.get("calibration_error", 0) > 0.05:
         actions.append("Recalibrate model predictions — probability estimates are unreliable")
 
     # ─── Plain language summary ───
@@ -395,9 +401,9 @@ def assess_deployment_risk() -> str:
         risk_details.append(f"a {round(fnr*100,1)}% false negative rate (missing real cases)")
     if bias_risk > 0.5:
         risk_details.append(f"bias detected in {biased_count}/{total_bias_metrics} fairness metrics")
-    if quality["pass_percentage"] < 50:
-        risk_details.append(f"only {quality['pass_percentage']}% of data quality checks passing")
-    if cur_acc < ref_acc - 0.05:
+    if pass_pct is not None and pass_pct < 50:
+        risk_details.append(f"only {pass_pct}% of data quality checks passing")
+    if cur_acc is not None and ref_acc is not None and cur_acc < ref_acc - 0.05:
         risk_details.append(f"accuracy degraded from {round(ref_acc*100,1)}% to {round(cur_acc*100,1)}%")
 
     if risk_details:
@@ -421,7 +427,7 @@ def assess_deployment_risk() -> str:
             "confidence_risk": {
                 "score": round(calibration_risk, 4),
                 "severity": "critical" if calibration_risk > 0.3 else "warning" if calibration_risk > 0.15 else "info",
-                "detail": f"Calibration error: {round(cal['calibration_error'], 4)}"
+                "detail": f"Calibration error: {round(cal.get('calibration_error', 0), 4)}"
             },
             "bias_risk": {
                 "score": round(bias_risk, 4),
@@ -431,12 +437,12 @@ def assess_deployment_risk() -> str:
             "drift_risk": {
                 "score": round(drift_risk, 4),
                 "severity": "critical" if drift_risk > 0.3 else "warning" if drift_risk > 0.1 else "info",
-                "detail": f"Drift in {drift['drifted_features_count']}/{drift['total_features_count']} features ({drift['drift_percentage']}%)"
+                "detail": f"Drift in {drift.get('drifted_features_count', 0)}/{drift.get('total_features_count', 0)} features ({drift.get('drift_percentage', 0)}%)"
             },
             "data_quality_risk": {
                 "score": round(quality_risk, 4),
                 "severity": "critical" if quality_risk > 0.5 else "warning" if quality_risk > 0.2 else "info",
-                "detail": f"Quality checks: {quality['passed']}/{quality['total_checks']} passed ({quality['pass_percentage']}%)"
+                "detail": f"Quality checks: {quality.get('passed', 0)}/{quality.get('total_checks', 0)} passed ({quality.get('pass_percentage', 0)}%)"
             }
         },
         "primary_risks": primary_risks,

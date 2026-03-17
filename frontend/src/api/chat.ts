@@ -68,3 +68,26 @@ export async function clearSession(): Promise<void> {
     throw new Error(`Clear session failed: ${res.status}`);
   }
 }
+
+/**
+ * Uploads ml_knowledge_base.json to the /upload-kb endpoint.
+ */
+export async function uploadKB(datasources: DatasourceFile[]): Promise<{ status: string; message: string }> {
+  const url = `${API_BASE.replace(/\/$/, "")}/upload-kb`;
+  const body: ChatRequest = {
+    message: "init upload",
+    datasources,
+  };
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${AUTH_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Upload KB failed: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}

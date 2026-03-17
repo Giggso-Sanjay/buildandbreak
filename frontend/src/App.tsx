@@ -6,12 +6,12 @@ import { ChatMessage } from "./components/ChatMessage";
 import { TypingIndicator } from "./components/TypingIndicator";
 import { ChatInput } from "./components/ChatInput";
 import { UploadModal } from "./components/UploadModal";
-import { sendChatMessage, clearSession } from "./api/chat";
+import { sendChatMessage, clearSession, uploadKB } from "./api/chat";
 import { parseMLData } from "./utils/parseMLData";
 import { isMLPerformanceQuery } from "./hooks/useMLQueryDetection";
 
-const TRINITY_PROMPT =
-  "Please provide all three datasource files: Datadrift, Observability (quality check), and XAI (explainability) from Trinity to proceed.";
+const KB_PROMPT =
+  "Please upload the ml_knowledge_base.json file to generate a response.";
 
 const NO_DATASOURCE_PROMPT =
   "Please upload a datasource before sending a query.";
@@ -28,7 +28,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [hasValidTrinity, setHasValidTrinity] = useState(false);
+  const [hasKB, setHasKB] = useState(false);
 
   // Auto-transition from welcome to chat after 3 seconds
   useEffect(() => {
@@ -36,30 +36,51 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Validate Trinity files (datadrift, observability, xai) when uploads change
+  // Validate KB file presence when uploads change
   useEffect(() => {
     if (uploadedFiles.length === 0) {
-      setHasValidTrinity(false);
+      setHasKB(false);
       return;
     }
-    const readFiles = async () => {
-      const contents = await Promise.all(
-        uploadedFiles.map((f) =>
-          f.text().then((c) => ({ name: f.name, content: c }))
-        )
-      );
-      const parsed = parseMLData(contents);
-      setHasValidTrinity(parsed.hasAllThree);
+    const checkKB = async () => {
+      const files = uploadedFiles.map((f) => ({ name: f.name, content: "" }));
+      const parsed = parseMLData(files);
+      setHasKB(parsed.hasKB);
     };
-    readFiles();
+    checkKB();
   }, [uploadedFiles]);
 
-  const handleFilesSelected = useCallback((files: File[]) => {
-    setUploadedFiles((prev) => {
-      const names = new Set(prev.map((f) => f.name));
-      const added = files.filter((f) => !names.has(f.name));
-      return [...prev, ...added];
-    });
+  const handleFilesSelected = useCallback(async (files: File[]) => {
+    // Only keep the most recent JSON file to ensure a single-KB constraint
+    const kbFile = [...files].reverse().find(f => f.name === "ml_knowledge_base.json") 
+                || [...files].reverse().find(f => f.name.toLowerCase().endsWith(".json"));
+
+    if (kbFile) {
+      // Automatic session reset: clear messages and previous files
+      setMessages([]);
+      setUploadedFiles([kbFile]);
+      
+      try {
+        const content = await kbFile.text();
+        // We always send it as 'ml_knowledge_base.json' so the backend knows to treat it as the KB
+        const res = await uploadKB([{ name: "ml_knowledge_base.json", content }]);
+        if (res.status === "error") {
+          // Add a message to the chat to notify the user of the validation error
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "assistant",
+              content: `⚠️ **Upload Failed**: ${res.message}`,
+            },
+          ]);
+          // Reset uploaded files so user can try again
+          setUploadedFiles([]);
+        }
+      } catch (err) {
+        console.error("Failed to proactively upload KB:", err);
+      }
+    }
   }, []);
 
   const handleClearSession = useCallback(async () => {
@@ -87,15 +108,15 @@ export default function App() {
         ]);
         return;
       }
-      // Trinity validation: if ML query, require all 3 files (datadrift, observability, xai)
-      if (isMLPerformanceQuery(text) && !hasValidTrinity) {
+      // KB validation: if ML query, require ml_knowledge_base.json
+      if (isMLPerformanceQuery(text) && !hasKB) {
         setMessages((prev) => [
           ...prev,
           { id: crypto.randomUUID(), role: "user", content: text },
           {
             id: crypto.randomUUID(),
             role: "assistant",
-            content: TRINITY_PROMPT,
+            content: KB_PROMPT,
           },
         ]);
         return;
@@ -110,16 +131,16 @@ export default function App() {
       setIsLoading(true);
 
       try {
-        const datasources = await Promise.all(
-          uploadedFiles.map(async (f) => ({
-            name: f.name,
-            content: await f.text(),
-          }))
-        );
+        // Since we proactively upload files in handleFilesSelected, we don't need to re-read
+        // and re-send them here. This avoids "Stale Handle" errors in the browser.
+        const datasources: any[] = []; 
+        
         // Prepend context so nanobot uses tools (reads ml_knowledge_base.json)
-        const messageWithContext =
-          datasources.length >= 3
-            ? `[The user has uploaded ML datasources. Use your tools (get_model_performance, assess_deployment_risk, orchestrate_query, get_drift_report, get_bias_report, etc.) to analyze them and provide insights.] ${text}`
+        const messageWithContext = hasKB
+            ? `[SYSTEM: You are the Model Risk Assessment Engine. 
+1. DIRECTNESS: Jump immediately to the ML analysis. Do NOT provide intros, bios, or disclaimers about your specialization. 
+2. SCOPE: ONLY facilitate Model Risk queries. If a query is NOT about ML performance, bias, drift, or metrics (e.g. general math), simply respond with: "I am designed only for Model Risk Assessment." 
+3. TOOLS: If a tool reports 'unable to parse' or 'data not provided', simply state that those specific metrics are currently unavailable in the uploaded source.] ${text}`
             : text;
         const res = await sendChatMessage(messageWithContext, undefined, datasources);
         setMessages((prev) => [
@@ -143,7 +164,7 @@ export default function App() {
         setIsLoading(false);
       }
     },
-    [uploadedFiles, hasValidTrinity]
+    [uploadedFiles, hasKB]
   );
 
   return (
