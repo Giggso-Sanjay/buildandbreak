@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from .agent_factory import build_config_from_env, write_runtime_config
 from .auth import verify_token
+from .parse_trinity import parse_trinity_files
 
 logger = logging.getLogger("nanobot_api")
 logging.basicConfig(level=logging.INFO)
@@ -23,16 +24,22 @@ app = FastAPI(title="Nanobot Agent API", version="0.1.0")
 # CORS for dev; prod serves FE from same origin
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+class DatasourceFile(BaseModel):
+    name: str
+    content: str
+
+
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    datasources: Optional[List[DatasourceFile]] = None
 
 
 class ChatResponse(BaseModel):
@@ -63,6 +70,16 @@ async def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
+@app.post("/clear-session")
+async def clear_session(_auth: dict = Depends(verify_token)) -> Dict[str, str]:
+    """Delete ml_knowledge_base.json when user clears session."""
+    kb_path = Path(__file__).resolve().parent.parent / "ml_knowledge_base.json"
+    if kb_path.exists():
+        kb_path.unlink()
+        logger.info("Deleted ml_knowledge_base.json")
+    return {"status": "ok"}
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(
     request: ChatRequest,
@@ -76,9 +93,23 @@ async def chat(
     """
     cfg = app.state.nanobot_config
     cfg_path: Path = app.state.nanobot_config_path
+    kb_path: Path = Path(__file__).resolve().parent.parent / "ml_knowledge_base.json"
 
     provider = cfg["agents"]["defaults"].get("provider", "unknown")
     model = cfg["agents"]["defaults"].get("model", "unknown")
+
+    # Parse Trinity files and write ml_knowledge_base.json when datasources provided
+    ds_count = len(request.datasources) if request.datasources else 0
+    logger.info("Chat request: datasources=%d", ds_count)
+    if request.datasources and ds_count >= 3:
+        try:
+            files_data = [{"name": d.name, "content": d.content} for d in request.datasources]
+            kb = parse_trinity_files(files_data)
+            with open(kb_path, "w", encoding="utf-8") as f:
+                json.dump(kb, f, indent=4)
+            logger.info("Wrote ml_knowledge_base.json from %d datasources", ds_count)
+        except Exception as e:
+            logger.warning("Failed to parse datasources: %s", e)
 
     try:
         completed = subprocess.run(

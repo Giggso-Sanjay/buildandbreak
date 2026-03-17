@@ -51,7 +51,7 @@ export function UploadModal({
               Upload Datasources
             </h2>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Upload JSON files (datadrift response and observability from Trinity).
+              Upload all 3 JSON files: Datadrift, Observability (quality check), and XAI (explainability) from Trinity.
             </p>
             <input
               ref={inputRef}
@@ -73,9 +73,10 @@ export function UploadModal({
                 {uploadedFiles.map((f) => (
                   <li
                     key={f.name}
-                    className="rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                    className="overflow-hidden rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                    title={f.name}
                   >
-                    {f.name}
+                    <span className="block truncate">{f.name}</span>
                   </li>
                 ))}
               </ul>

@@ -6,12 +6,12 @@ import { ChatMessage } from "./components/ChatMessage";
 import { TypingIndicator } from "./components/TypingIndicator";
 import { ChatInput } from "./components/ChatInput";
 import { UploadModal } from "./components/UploadModal";
-import { sendChatMessage } from "./api/chat";
+import { sendChatMessage, clearSession } from "./api/chat";
 import { parseMLData } from "./utils/parseMLData";
 import { isMLPerformanceQuery } from "./hooks/useMLQueryDetection";
 
 const TRINITY_PROMPT =
-  "Please provide the necessary Datadrift and Observability files from Trinity to proceed.";
+  "Please provide all three datasource files: Datadrift, Observability (quality check), and XAI (explainability) from Trinity to proceed.";
 
 const NO_DATASOURCE_PROMPT =
   "Please upload a datasource before sending a query.";
@@ -28,8 +28,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
-  const [hasDatadriftAndObservability, setHasDatadriftAndObservability] =
-    useState(false);
+  const [hasValidTrinity, setHasValidTrinity] = useState(false);
 
   // Auto-transition from welcome to chat after 3 seconds
   useEffect(() => {
@@ -37,10 +36,10 @@ export default function App() {
     return () => clearTimeout(t);
   }, []);
 
-  // Validate Trinity files when uploads change
+  // Validate Trinity files (datadrift, observability, xai) when uploads change
   useEffect(() => {
     if (uploadedFiles.length === 0) {
-      setHasDatadriftAndObservability(false);
+      setHasValidTrinity(false);
       return;
     }
     const readFiles = async () => {
@@ -50,10 +49,7 @@ export default function App() {
         )
       );
       const parsed = parseMLData(contents);
-      const ok =
-        parsed.datadrift?.isValid === true &&
-        parsed.observability?.isValid === true;
-      setHasDatadriftAndObservability(ok);
+      setHasValidTrinity(parsed.hasAllThree);
     };
     readFiles();
   }, [uploadedFiles]);
@@ -66,7 +62,12 @@ export default function App() {
     });
   }, []);
 
-  const handleClearSession = useCallback(() => {
+  const handleClearSession = useCallback(async () => {
+    try {
+      await clearSession();
+    } catch {
+      // Ignore clear-session API errors
+    }
     setUploadedFiles([]);
     setMessages([]);
   }, []);
@@ -86,8 +87,8 @@ export default function App() {
         ]);
         return;
       }
-      // Trinity validation: if ML query, require both files
-      if (isMLPerformanceQuery(text) && !hasDatadriftAndObservability) {
+      // Trinity validation: if ML query, require all 3 files (datadrift, observability, xai)
+      if (isMLPerformanceQuery(text) && !hasValidTrinity) {
         setMessages((prev) => [
           ...prev,
           { id: crypto.randomUUID(), role: "user", content: text },
@@ -109,7 +110,18 @@ export default function App() {
       setIsLoading(true);
 
       try {
-        const res = await sendChatMessage(text);
+        const datasources = await Promise.all(
+          uploadedFiles.map(async (f) => ({
+            name: f.name,
+            content: await f.text(),
+          }))
+        );
+        // Prepend context so nanobot uses tools (reads ml_knowledge_base.json)
+        const messageWithContext =
+          datasources.length >= 3
+            ? `[The user has uploaded ML datasources. Use your tools (get_model_performance, assess_deployment_risk, orchestrate_query, get_drift_report, get_bias_report, etc.) to analyze them and provide insights.] ${text}`
+            : text;
+        const res = await sendChatMessage(messageWithContext, undefined, datasources);
         setMessages((prev) => [
           ...prev,
           {
@@ -131,7 +143,7 @@ export default function App() {
         setIsLoading(false);
       }
     },
-    [uploadedFiles.length, hasDatadriftAndObservability]
+    [uploadedFiles, hasValidTrinity]
   );
 
   return (

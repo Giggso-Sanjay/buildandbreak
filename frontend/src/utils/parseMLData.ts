@@ -20,10 +20,19 @@ export interface ObservabilityData {
   isValid: boolean;
 }
 
+/** Parsed XAI (explainability) file structure */
+export interface XaiData {
+  raw: Record<string, unknown>;
+  isValid: boolean;
+}
+
 /** Combined ML context for Trinity analysis */
 export interface ParsedMLContext {
   datadrift: DatadriftData | null;
   observability: ObservabilityData | null;
+  xai: XaiData | null;
+  /** True when all 3 required files (datadrift, quality/observability, xai) are present */
+  hasAllThree: boolean;
 }
 
 /**
@@ -52,23 +61,41 @@ function parseDatadriftFile(content: string): DatadriftData {
 }
 
 /**
- * Attempts to parse a file as observability JSON.
- * Heuristics: look for observability-related keys (metrics, latency, errors, etc.)
+ * Attempts to parse a file as observability/quality JSON.
+ * Heuristics: expect_column_* (Great Expectations) or observability keys.
  */
 function parseObservabilityFile(content: string): ObservabilityData {
   try {
     const parsed = JSON.parse(content) as Record<string, unknown>;
-    // Placeholder validation - refine when sample structure is provided
     const hasObsKeys =
       typeof parsed === "object" &&
-      (parsed !== null) &&
+      parsed !== null &&
+      (Object.keys(parsed).some((k) =>
+        /expect_column|observability|quality/i.test(k)
+      ) ||
+        Object.keys(parsed).some((k) =>
+          /metric|latency|error|model|performance/i.test(k)
+        ));
+    return { raw: parsed, isValid: !!hasObsKeys };
+  } catch {
+    return { raw: {}, isValid: false };
+  }
+}
+
+/**
+ * Attempts to parse a file as XAI (explainability) JSON.
+ * Heuristics: performanceMetrics, confusionMatrix, featureImportance, shapGlobal.
+ */
+function parseXaiFile(content: string): XaiData {
+  try {
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    const hasXaiKeys =
+      typeof parsed === "object" &&
+      parsed !== null &&
       Object.keys(parsed).some((k) =>
-        /observability|metric|latency|error|model|performance/i.test(k)
+        /performanceMetrics|confusionMatrix|featureImportance|shapGlobal|rocPlot|prPlot/i.test(k)
       );
-    return {
-      raw: parsed,
-      isValid: hasObsKeys,
-    };
+    return { raw: parsed, isValid: !!hasXaiKeys };
   } catch {
     return { raw: {}, isValid: false };
   }
@@ -86,26 +113,34 @@ export function parseMLData(
 ): ParsedMLContext {
   let datadrift: DatadriftData | null = null;
   let observability: ObservabilityData | null = null;
+  let xai: XaiData | null = null;
 
   for (const { name, content } of files) {
     const lower = name.toLowerCase();
-    // Infer type from filename if possible
     if (lower.includes("drift") || lower.includes("datadrift")) {
       datadrift = parseDatadriftFile(content);
     } else if (
       lower.includes("observability") ||
-      lower.includes("obs") ||
-      lower.includes("trinity")
+      lower.includes("quality") ||
+      lower.includes("qualitycheck")
     ) {
       observability = parseObservabilityFile(content);
+    } else if (lower.includes("xai") || lower.includes("explain")) {
+      xai = parseXaiFile(content);
     } else {
-      // Try both parsers and use the one that validates
       const d = parseDatadriftFile(content);
       const o = parseObservabilityFile(content);
+      const x = parseXaiFile(content);
       if (d.isValid && !datadrift) datadrift = d;
       if (o.isValid && !observability) observability = o;
+      if (x.isValid && !xai) xai = x;
     }
   }
 
-  return { datadrift, observability };
+  return {
+    datadrift,
+    observability,
+    xai,
+    hasAllThree: !!(datadrift?.isValid && observability?.isValid && xai?.isValid),
+  };
 }

@@ -23,13 +23,15 @@ export function ChatMessage({ role, content, index }: ChatMessageProps) {
       transition={{ duration: 0.3, delay: index * 0.05 }}
     >
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 sm:max-w-[75%] ${
+        className={`max-w-[85%] rounded-2xl px-4 py-3 sm:max-w-[75%] overflow-hidden ${
           isUser
             ? "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900"
             : "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100"
         }`}
       >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed">{content}</p>
+        <p className="max-h-[50vh] overflow-y-auto overflow-x-hidden break-words whitespace-pre-wrap text-sm leading-relaxed">
+          {content}
+        </p>
       </div>
     </motion.div>
   );
