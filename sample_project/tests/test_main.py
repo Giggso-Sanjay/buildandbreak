@@ -18,3 +18,9 @@ def test_main_default_argv(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", ["main.py"])
     main()
     assert capsys.readouterr().out == "Hello, World!\n"
+
+
+def test_main_empty_name_falls_back_to_default(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["main.py", ""])
+    main()
+    assert capsys.readouterr().out == "Hello, World!\n"
