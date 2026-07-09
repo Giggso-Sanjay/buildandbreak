@@ -88,11 +88,12 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
             normalized[key] = template_val
         elif isinstance(template_val, dict) and not isinstance(data[key], dict):
             # If we expected an object but got something else, mark as unable to parse.
-            # Preserve dict-typed sub-fields (e.g. performance_metrics.current/reference,
-            # confusion_matrix.derived) as dicts rather than strings, since downstream
-            # consumers call .get()/indexing on them regardless of how the section was filled.
+            # Preserve container-typed sub-fields (e.g. performance_metrics.current/reference,
+            # confusion_matrix.derived, bias_report.metrics) as dicts/lists rather than strings,
+            # since downstream consumers call .get()/indexing/iteration on them regardless of
+            # how the section was filled.
             normalized[key] = {
-                k: (v if isinstance(v, dict) else "unable to parse data from source")
+                k: (v if isinstance(v, (dict, list)) else "unable to parse data from source")
                 for k, v in template_val.items()
             }
         elif isinstance(template_val, dict):
@@ -102,6 +103,11 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
             for sub_k, sub_v in template_val.items():
                 if sub_k not in section:
                     normalized_section[sub_k] = sub_v
+                elif isinstance(sub_v, (dict, list)) and not isinstance(section[sub_k], type(sub_v)):
+                    # Sub-field present but wrong-typed (e.g. a string where a dict/list is
+                    # expected) - fall back to an empty container of the expected shape so
+                    # downstream .get()/iteration never sees an incompatible type.
+                    normalized_section[sub_k] = type(sub_v)()
                 else:
                     normalized_section[sub_k] = section[sub_k]
             normalized[key] = normalized_section
