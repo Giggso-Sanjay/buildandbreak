@@ -57,14 +57,14 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     TEMPLATE = {
         "model_info": {"name": "unable to parse", "type": "unable to parse"},
         "performance_metrics": {
-            "current": "unable to parse data from source",
-            "reference": "unable to parse data from source",
+            "current": {},
+            "reference": {},
             "performance_message": "data not provided",
             "severity": "info"
         },
         "confusion_matrix": {
             "labels": "unable to parse data from source",
-            "derived": "unable to parse data from source"
+            "derived": {}
         },
         "data_drift": {
             "drift_detected": "data not provided",
@@ -87,8 +87,14 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
         if key not in data:
             normalized[key] = template_val
         elif isinstance(template_val, dict) and not isinstance(data[key], dict):
-            # If we expected an object but got something else, mark as unable to parse
-            normalized[key] = {k: "unable to parse data from source" for k in template_val.keys()} if isinstance(template_val, dict) else "unable to parse data from source"
+            # If we expected an object but got something else, mark as unable to parse.
+            # Preserve dict-typed sub-fields (e.g. performance_metrics.current/reference,
+            # confusion_matrix.derived) as dicts rather than strings, since downstream
+            # consumers call .get()/indexing on them regardless of how the section was filled.
+            normalized[key] = {
+                k: (v if isinstance(v, dict) else "unable to parse data from source")
+                for k, v in template_val.items()
+            }
         elif isinstance(template_val, dict):
             # Deep merge/check for subkeys if it's an object
             section = data[key]
