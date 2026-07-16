@@ -1,31 +1,30 @@
 {
   "project": "buildandbreak",
-  "org": "giggso",
-  "owner": "m.satishwaran@giggso.com",
-  "user_email": "m.satishwaran@giggso.com",
-  "hub_url": "https://ravenhub.giggso.com",
-  "version": "1.0.0",
-  "raven_version": "3.0.0",
+  "owner": "Giggso-Sanjay",
+  "git_remote": "https://github.com/Giggso-Sanjay/buildandbreak.git",
   "stack": {
-    "language": [],
-    "frontend": [],
-    "data": [],
+    "language": ["python", "typescript"],
+    "frontend": ["react", "vite"],
+    "backend": ["fastapi"],
     "db": [],
-    "infra": [],
-    "cloud": "none",
-    "libraries": []
+    "infra": ["docker"],
+    "cloud": "on-prem",
+    "libraries": [
+      "fastapi==0.115.0",
+      "uvicorn[standard]==0.32.0",
+      "python-dotenv==1.0.1",
+      "nanobot-ai==0.1.4.post4",
+      "mcp==1.26.0",
+      "PyJWT==2.10.1"
+    ]
   },
   "standards": "raven-v1",
-  "guard": {
-    "enabled": true,
-    "version": "1.0"
-  },
-  "changelog": [
-    {
-      "version": "1.0.0",
-      "date": "2026-06-24T06:25:59Z",
-      "changed_by": "m.satishwaran@giggso.com",
-      "summary": "Raven project auto-initialised by session-start.py"
-    }
+  "approval_mode": "first_responder",
+  "guards": [
+    "bash-ban-raw-tools",
+    "cbm-code-discovery-gate",
+    "cve-prompt-guard",
+    "secret-scan",
+    "audit-log"
   ]
 }
