@@ -7,6 +7,8 @@ def is_palindrome(s: str) -> bool:
 
 
 def factorial(n: int) -> int:
+    if n < 0:
+        raise ValueError("factorial is undefined for negative numbers")
     return 1 if n <= 1 else n * factorial(n - 1)
 
 
