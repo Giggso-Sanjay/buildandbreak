@@ -95,7 +95,10 @@ datadrift.json
 xaiml.json
 implementation_plan.md.resolved
 terminal.md
-# Raven Enterprise -- never commit these
+# Raven Enterprise -- never commit these (proprietary tooling, local-only)
 .raven/manifest.secrets.json
 .raven/.cache/
+.raven/audit/
+.raven/state/
+.claude/
 .model.env
