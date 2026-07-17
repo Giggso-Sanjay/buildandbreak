@@ -3,6 +3,8 @@ import logging
 import os
 import re
 import subprocess
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -169,11 +171,26 @@ async def on_startup() -> None:
 
     app.state.nanobot_config = cfg
     app.state.nanobot_config_path = runtime_cfg_path
+    app.state.started_at = time.monotonic()
 
 
-@app.get("/health")
-async def health() -> Dict[str, str]:
-    return {"status": "ok"}
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    uptime_s: float
+    timestamp: str
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health() -> HealthResponse:
+    started_at = getattr(app.state, "started_at", None)
+    uptime_s = round(time.monotonic() - started_at, 1) if started_at is not None else 0.0
+    return HealthResponse(
+        status="ok",
+        version=app.version,
+        uptime_s=uptime_s,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+    )
 
 
 @app.post("/clear-session")
