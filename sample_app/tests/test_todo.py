@@ -157,6 +157,62 @@ class TestTodoListList:
         assert ids == sorted(ids)
 
 
+class TestTodoListPriority:
+    """Test priority support on Task/TodoList.add/list."""
+
+    def test_add_default_priority_is_zero(self) -> None:
+        """Tasks default to priority 0 when not specified."""
+        todo = TodoList()
+        task = todo.add("Task")
+        assert task.priority == 0
+
+    def test_add_negative_priority_raises_valueerror(self) -> None:
+        """Adding a task with negative priority raises ValueError."""
+        todo = TodoList()
+        with pytest.raises(ValueError, match="priority must not be negative"):
+            todo.add("Task", priority=-1)
+
+    def test_list_sort_by_priority_orders_high_first(self) -> None:
+        """sort_by_priority=True orders tasks from highest to lowest priority."""
+        todo = TodoList()
+        low = todo.add("Low", priority=1)
+        high = todo.add("High", priority=5)
+        mid = todo.add("Mid", priority=3)
+        tasks = todo.list(sort_by_priority=True)
+        assert tasks == [high, mid, low]
+
+    def test_list_sort_by_priority_ties_break_by_insertion_order(self) -> None:
+        """Equal-priority tasks keep their id order (stable sort)."""
+        todo = TodoList()
+        first = todo.add("First", priority=2)
+        second = todo.add("Second", priority=2)
+        third = todo.add("Third", priority=2)
+        tasks = todo.list(sort_by_priority=True)
+        assert tasks == [first, second, third]
+
+    def test_list_sort_by_priority_combines_with_include_done_false(self) -> None:
+        """Priority sort still respects the include_done filter."""
+        todo = TodoList()
+        low = todo.add("Low", priority=1)
+        high = todo.add("High", priority=5)
+        todo.complete(high.id)
+        tasks = todo.list(include_done=False, sort_by_priority=True)
+        assert tasks == [low]
+
+    def test_list_sort_by_priority_empty_list(self) -> None:
+        """sort_by_priority on an empty TodoList returns an empty list."""
+        todo = TodoList()
+        assert todo.list(sort_by_priority=True) == []
+
+    def test_list_default_sort_by_priority_is_false(self) -> None:
+        """Without sort_by_priority, list() still orders by id regardless of priority."""
+        todo = TodoList()
+        high = todo.add("High", priority=5)
+        low = todo.add("Low", priority=1)
+        tasks = todo.list()
+        assert tasks == [high, low]
+
+
 class TestTodoListIntegration:
     """Integration tests for TodoList."""
 

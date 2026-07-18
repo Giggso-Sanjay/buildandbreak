@@ -9,6 +9,7 @@ class Task:
     id: int
     title: str
     done: bool = False
+    priority: int = 0
 
 
 class TodoList:
@@ -18,10 +19,12 @@ class TodoList:
         self._tasks: dict[int, Task] = {}
         self._ids = count(1)
 
-    def add(self, title: str) -> Task:
+    def add(self, title: str, priority: int = 0) -> Task:
         if not title.strip():
             raise ValueError("title must not be empty")
-        task = Task(id=next(self._ids), title=title.strip())
+        if priority < 0:
+            raise ValueError("priority must not be negative")
+        task = Task(id=next(self._ids), title=title.strip(), priority=priority)
         self._tasks[task.id] = task
         return task
 
@@ -34,11 +37,13 @@ class TodoList:
         self._get(task_id)
         del self._tasks[task_id]
 
-    def list(self, include_done: bool = True) -> list[Task]:
+    def list(self, include_done: bool = True, sort_by_priority: bool = False) -> list[Task]:
         tasks = sorted(self._tasks.values(), key=lambda t: t.id)
-        if include_done:
-            return tasks
-        return [t for t in tasks if not t.done]
+        if not include_done:
+            tasks = [t for t in tasks if not t.done]
+        if sort_by_priority:
+            tasks = sorted(tasks, key=lambda t: -t.priority)
+        return tasks
 
     def _get(self, task_id: int) -> Task:
         try:
