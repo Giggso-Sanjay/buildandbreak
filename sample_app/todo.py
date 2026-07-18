@@ -42,7 +42,7 @@ class TodoList:
         if not include_done:
             tasks = [t for t in tasks if not t.done]
         if sort_by_priority:
-            tasks = sorted(tasks, key=lambda t: -t.priority)
+            tasks = sorted(tasks, key=lambda t: (-t.priority, t.id))
         return tasks
 
     def _get(self, task_id: int) -> Task:

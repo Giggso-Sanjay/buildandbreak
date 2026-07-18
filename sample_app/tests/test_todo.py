@@ -172,6 +172,14 @@ class TestTodoListPriority:
         with pytest.raises(ValueError, match="priority must not be negative"):
             todo.add("Task", priority=-1)
 
+    def test_rejected_add_does_not_consume_an_id(self) -> None:
+        """A failed add() (negative priority) leaves the id counter untouched."""
+        todo = TodoList()
+        with pytest.raises(ValueError):
+            todo.add("Task", priority=-1)
+        task = todo.add("Task")
+        assert task.id == 1
+
     def test_list_sort_by_priority_orders_high_first(self) -> None:
         """sort_by_priority=True orders tasks from highest to lowest priority."""
         todo = TodoList()
