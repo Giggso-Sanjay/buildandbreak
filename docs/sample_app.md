@@ -23,9 +23,10 @@ tasks are gone.
 ```python
 @dataclass
 class Task:
-    id: int        # unique, monotonically increasing within one TodoList
-    title: str     # non-empty, whitespace-stripped
+    id: int          # unique, monotonically increasing within one TodoList
+    title: str       # non-empty, whitespace-stripped
     done: bool = False
+    priority: int = 0  # non-negative; higher sorts first under sort_by_priority
 ```
 
 ### `TodoList`
@@ -35,19 +36,25 @@ task store and its own id counter starting at `1`.
 
 | Method | Signature | Returns | Raises |
 | --- | --- | --- | --- |
-| `add` | `add(title: str) -> Task` | the created `Task` (id assigned, `done=False`) | `ValueError` if `title` is empty or whitespace-only |
+| `add` | `add(title: str, priority: int = 0) -> Task` | the created `Task` (id assigned, `done=False`) | `ValueError` if `title` is empty/whitespace-only, or `priority` is negative |
 | `complete` | `complete(task_id: int) -> Task` | the same stored `Task`, now `done=True` | `KeyError` if no task has that id |
 | `remove` | `remove(task_id: int) -> None` | `None` | `KeyError` if no task has that id |
-| `list` | `list(include_done: bool = True) -> list[Task]` | tasks sorted by id; when `include_done=False`, only tasks where `done` is `False` | — |
+| `list` | `list(include_done: bool = True, sort_by_priority: bool = False) -> list[Task]` | tasks sorted by id (or `-priority, id` when `sort_by_priority=True`); when `include_done=False`, only tasks where `done` is `False` | — |
 
 Notes:
 
 - `add` strips leading/trailing whitespace from `title` before storing it.
+- `add` rejects `title`/`priority` before assigning an id — a rejected call
+  never consumes one, so the next successful `add` still gets the id it
+  would have gotten anyway.
 - `complete` is idempotent — completing an already-done task is safe and
   simply returns it still marked done.
 - `complete` returns the same object held in the list, so mutating the
   returned `Task` mutates the stored one.
 - The id counter is never reused; removing a task does not free its id.
+- `sort_by_priority=True` orders tasks from highest to lowest `priority`,
+  breaking ties by `id` (insertion order) — the tie-break is an explicit
+  part of the sort key, not an artifact of an earlier sort.
 
 ## Usage
 
@@ -67,6 +74,9 @@ todo.list(include_done=False)   # -> [Task(1, "Buy milk"), Task(3, "Code review"
 
 todo.remove(t1.id)              # drop "Buy milk"
 todo.list()                     # -> [Task(2, "Walk dog", done=True), Task(3, "Code review")]
+
+todo.add("Urgent fix", priority=5)
+todo.list(sort_by_priority=True)  # -> [Task(4, "Urgent fix", priority=5), Task(2, ...), Task(3, ...)]
 ```
 
 ## Scope and caveats
