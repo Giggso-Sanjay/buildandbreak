@@ -4,16 +4,29 @@
   "owner": "m.satishwaran@giggso.com",
   "user_email": "m.satishwaran@giggso.com",
   "hub_url": "https://ravenhub.giggso.com",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "raven_version": "3.0.0",
   "stack": {
-    "language": [],
-    "frontend": [],
-    "data": [],
-    "db": [],
-    "infra": [],
+    "language": ["python", "typescript", "javascript"],
+    "frontend": ["react", "vite", "tailwindcss"],
+    "data": ["sqlite"],
+    "db": ["sqlite"],
+    "infra": ["docker"],
     "cloud": "none",
-    "libraries": []
+    "libraries": [
+      "fastapi",
+      "uvicorn",
+      "python-dotenv",
+      "nanobot-ai",
+      "mcp",
+      "PyJWT",
+      "react",
+      "tailwindcss",
+      "vite",
+      "framer-motion",
+      "typescript",
+      "eslint"
+    ]
   },
   "standards": "raven-v1",
   "guard": {
@@ -26,6 +39,12 @@
       "date": "2026-06-24T06:25:59Z",
       "changed_by": "m.satishwaran@giggso.com",
       "summary": "Raven project auto-initialised by session-start.py"
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-08-04T00:00:00Z",
+      "changed_by": "m.satishwaran@giggso.com",
+      "summary": "Stack fields populated via raven-init re-scan (FastAPI/React/SQLite/Docker detected)"
     }
   ]
 }
