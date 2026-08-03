@@ -8,6 +8,13 @@ env.bak/
 venv.bak/
 config.env
 
+# Certs / keys — never commit
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+
 # Configs and local runtime files
 docker-commands.bat
 docker-commands.sh

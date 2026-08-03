@@ -1,10 +1,21 @@
-# FIXTURE FILE — fake credentials for secret-scanner / detection-tool testing.
-# None of these values are real or active. Do not replace with genuine secrets.
+"""Configuration for sample_secrets_app.
 
-AWS_ACCESS_KEY_ID = "AKIAFAKE1234567890AB"
-AWS_SECRET_ACCESS_KEY = "FAKEsecretKEYvalue1234567890abcdefFAKE12"
-STRIPE_SECRET_KEY = "sk_test_FAKE1234567890abcdef1234567890ab"
-GITHUB_TOKEN = "ghp_FAKE1234567890abcdefFAKE1234567890ab"
-JWT_SIGNING_SECRET = "fake-jwt-signing-secret-do-not-use-1234567890"
-DB_PASSWORD = "FakeP@ssw0rd123!"
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/FAKE/FAKE/fakefakefakefakefakefake"
+Credentials are loaded from environment variables — nothing is hardcoded
+in source. Copy `env.example` to `.env` (git-ignored) and fill in values
+to see the app produce populated output; it runs fine with the defaults
+empty too.
+"""
+
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+JWT_SIGNING_SECRET = os.getenv("JWT_SIGNING_SECRET", "")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
