@@ -1,0 +1,43 @@
+{
+  "session_started_at": "2026-08-04T07:40:45.599479Z",
+  "raven_overhead": {
+    "tokens": 1718,
+    "cost_usd": 0.000424,
+    "calls": 30,
+    "by_source": {
+      "triage-router": {
+        "tokens": 1078,
+        "calls": 22,
+        "cost_usd": 0.000264
+      },
+      "architect-router": {
+        "tokens": 640,
+        "calls": 8,
+        "cost_usd": 0.00016
+      }
+    }
+  },
+  "user_work": {
+    "tokens": 0,
+    "cost_usd": 0.0,
+    "calls": 25,
+    "tier_counts": {
+      "SIMPLE": 17,
+      "MEDIUM": 8,
+      "COMPLEX": 0,
+      "LOCAL_ONLY": 0
+    },
+    "last_classification": {
+      "timestamp": "2026-08-04T09:36:39.155988Z",
+      "user_query_hash": "3d15ec3b3459f8de",
+      "tier": "MEDIUM",
+      "score": 5,
+      "reasons": [
+        "architecture_keyword:design",
+        "multi_file_scope:8_files"
+      ],
+      "model_for_tier": "anthropic/claude-sonnet-4-5"
+    }
+  },
+  "providers": {}
+}

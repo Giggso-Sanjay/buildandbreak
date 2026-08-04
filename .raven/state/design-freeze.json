@@ -1,0 +1,19 @@
+{
+  "design_hash": "235d8eaf7af9",
+  "global_hash": "",
+  "scope": [
+    "app/models/link.py` \u2014 `links` table model (code PK, long_url, created_at)",
+    "app/routes/shorten.py` \u2014 POST /shorten handler",
+    "app/services/code_gen.py` \u2014 base62 code generation + collision check",
+    "migrations/*_create_links_table.*` \u2014 new migration for the `links` table",
+    "tests/test_shorten.py` \u2014 core + extended test cases",
+    "app/db.py` \u2014 SQLAlchemy engine/session wiring (see D-001)",
+    "app/main.py` \u2014 FastAPI app entrypoint (see D-001)",
+    "requirements.txt` \u2014 runtime + test dependencies (see D-001)",
+    "tests/conftest.py` \u2014 pytest fixtures (in-memory SQLite test client) (see D-001)"
+  ],
+  "approver": "k.sanjaykumar@giggso.com",
+  "session": "",
+  "ts": "2026-08-04T08:56:56.506699+00:00",
+  "refrozen_by": "D-2"
+}

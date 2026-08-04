@@ -1,0 +1,296 @@
+{
+  "started": "2026-08-04T09:36:12.040902+00:00",
+  "staged_hash": "d5921f8d3b57cc10",
+  "files": {
+    ".gitignore": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/.model-session.json": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/audit/trace-158ee5ce-f4f9-4ee8-a728-15ef8849ac81.jsonl": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/audit/trace-1940aff8-7e14-4520-8499-5ae3ff989138.jsonl": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/audit/trace-unknown.jsonl": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/manifest.json": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/mcp-policy.json": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/state/.session-identity": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/state/design-freeze.json": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/state/edit-watcher.pid": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    ".raven/state/edits.jsonl": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "PRD.md": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "TDD.md": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/__init__.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/db.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/main.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/models/__init__.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/models/link.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/routes/__init__.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/routes/shorten.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/services/__init__.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "app/services/code_gen.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "decisions.md": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "design.md": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "migrations/0001_create_links_table.sql": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "requirements.txt": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "tests/__init__.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "tests/conftest.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    },
+    "tests/test_shorten.py": {
+      "ai_lines": 0,
+      "presented": "",
+      "acked": "",
+      "dwell_s": null,
+      "d4": "",
+      "note": "",
+      "flagged": false,
+      "bulk": false
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "project": "ravendemo",
+  "org": "giggso",
+  "owner": "k.sanjaykumar@giggso.com",
+  "user_email": "k.sanjaykumar@giggso.com",
+  "hub_url": "https://gsd.giggso.com",
+  "version": "1.0.0",
+  "raven_version": "3.0.0",
+  "stack": {
+    "language": [],
+    "frontend": [],
+    "data": [],
+    "db": [],
+    "infra": [],
+    "cloud": "none",
+    "libraries": []
+  },
+  "standards": "raven-v1",
+  "guard": {
+    "enabled": true,
+    "version": "1.0"
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-08-04T07:16:49Z",
+      "changed_by": "k.sanjaykumar@giggso.com",
+      "summary": "Raven project auto-initialised by session-start.py"
+    }
+  ]
+}
