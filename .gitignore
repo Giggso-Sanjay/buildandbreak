@@ -1,0 +1,11 @@
+# Raven Enterprise -- never commit these
+.raven/manifest.secrets.json
+.raven/.cache/
+.model.env
+reports/
+nul
+__pycache__/
+.raven/state/
+.raven/audit/
+.raven/.model-session.json
+*.pid

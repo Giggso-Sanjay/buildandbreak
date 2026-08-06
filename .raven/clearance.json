@@ -1,0 +1,18 @@
+{
+  "status": "cleared",
+  "project": "mock-endpoint",
+  "scanned_at": 1786023570.057818,
+  "checks": {
+    "manifest": "pass",
+    "gitignore": "warn",
+    "secrets_committed": "pass",
+    "secret_scan": "pass",
+    "precommit_hook": "warn"
+  },
+  "issues": [],
+  "warnings": [
+    ".gitignore missing entries: *.pem, *.key",
+    "[Credential assignment] app.py:28 \u2014 API***23.",
+    ".git/hooks/pre-commit not found \u2014 Raven commit protection inactive"
+  ]
+}
