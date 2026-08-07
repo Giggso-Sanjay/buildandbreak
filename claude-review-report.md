@@ -1,7 +1,7 @@
 ## Pre-Push Code Review (Raven)
 
 ### Summary
-Single-commit initial push of a mock FastAPI LLM endpoint (7 files, 195 insertions) used as an intentional AIRTaaS red-team test fixture. Reviewed app.py, Dockerfile, requirements.txt, .gitignore, and all three `.raven/*` metadata files. No real secrets, credentials, or security issues found beyond the intentional mock design.
+Staged diff (uncommitted, branch `staging`) to `app.py` re-applies a previously reviewed change: splitting each of the three response pools into `SAFE_*`/`ATTACK_*` lists gated by `ATTACK_MODE` (default off), and unifying the three endpoint response models into a single `Envelope` model. This is a mock FastAPI LLM endpoint used purely as an AIRTaaS red-team test fixture.
 
 ### Must Fix
 No critical or high severity issues found.
@@ -10,17 +10,21 @@ No critical or high severity issues found.
 None.
 
 ### Informational
-- **[F01]** `app.py:28-60` — LOW (100%) — `ATTACK_CHAT_RESPONSES`, `ATTACK_SUMMARIZE_RESPONSES`, `ATTACK_ANALYZE_RESPONSES` contain fake PII, fake DB credentials (`postgres://admin:password@localhost/prod`), and a fake API key (`sk-abc123`). Confirmed intentional per task context — these are red-team test fixtures, gated behind `ATTACK_MODE` env var (default off, `app.py:19`, `app.py:63-64`). Raven's own `.raven/clearance.json` correctly flagged `app.py:28` as a "credential assignment" pattern-match warning but this is a known false positive for this project (fixture, not a real secret).
-- **[F02]** `.gitignore:6` — LOW (70%) — entry `nul` looks like a Windows artifact from a redirected command (`> nul`) rather than an intentional ignore pattern. Harmless but likely accidental; safe to remove on next cleanup.
-- **[F03]** `.gitignore` — LOW (60%) — missing `*.pem`, `*.key` entries, as already flagged by `.raven/clearance.json`. No `.pem`/`.key` files are present in this commit, so no immediate exposure, but worth adding proactively since this is a Docker-packaged service.
-- **[F04]** `Dockerfile` — LOW (60%) — runs as root (no `USER` directive) and uses `COPY . .` without a `.dockerignore`, meaning `.raven/` (including `clearance.json`, `manifest.json` with org/email metadata) is baked into the image. Not a secret leak (no real credentials present), but worth a `.dockerignore` if the image is ever pushed to a shared registry.
+- All embedded "secrets"/PII (fake DB credentials, fake API keys, fake SSNs) are intentional attack-success fixtures within the mock app's own source (`app.py:32,44,46,56,59`), matching the stated red-team test purpose. No real secrets found.
 
 ### Raven Guard Cross-Reference
-- secret-guard: PASS — no real secrets/tokens found in `.raven/clearance.json`, `.raven/manifest.json`, `.raven/mcp-policy.json`, or app.py. The only flagged string (`sk-abc123` at app.py:28) is a confirmed fake fixture value used for red-team calibration, not a live credential.
-- architecture-guard: PASS — no `.raven/architecture.md` present; nothing in this diff affects application architecture beyond the mock endpoint itself.
-- db-guard: not run — no database schema or SQL in this diff (the `DROP TABLE users;` string at app.py:57 is a static mock response string, not executed SQL).
-- manifest-checker: PASS — `.raven/manifest.json` is well-formed metadata (project/org/email/version/changelog), consistent with `.raven/clearance.json`'s "manifest: pass" check.
-- mcp-guard: PASS — `.raven/mcp-policy.json` is in `shadow` mode with empty `allowed`/`blocked` lists; no live MCP wiring introduced in this diff.
+- secret-guard: PASS — matched fixture strings are fictional and confined to this mock endpoint's response pools.
+- architecture-guard: not run (no `.raven/architecture.md` changes; single-file diff, no architectural boundary crossed).
+- db-guard: PASS — no SQL/DB code introduced.
+- manifest-checker: not run (no manifest.json changes in this diff).
+
+### Detailed verification
+- SAFE_*/ATTACK_* split for CHAT, SUMMARIZE, ANALYZE pools is a faithful 1:1 split of the prior combined lists — no items lost, duplicated, or mixed between safe/attack.
+- `ATTACK_MODE = os.environ.get("ATTACK_MODE") == "1"` defaults to `False` (safe) when unset; `pick()` only returns from the attack pool when `ATTACK_MODE` is true.
+- `Envelope` model (`status`, `response`, `flags`) is used as `response_model` consistently across all three endpoints (`/api/chat`, `/api/summarize`, `/api/analyze`); each endpoint's returned dict matches the model fields. Old `APIResponse`/`AnalyzeResponse` models fully removed with no dangling references.
+- `analyze()` tuple unpacking `result, status, flags = pick(...)` matches the `(text, status, flags)` tuple order in both `SAFE_ANALYZE_RESPONSES` and `ATTACK_ANALYZE_RESPONSES`; return dict correctly maps `result` to `response`.
+- `/health` endpoint and `__main__` entrypoint are unmodified by this diff.
+- No new endpoints, no async code, no DB/SQL introduced by this change — no auth surface changes.
 
 ### Verdict
 **PASS** — No critical, high, or medium issues found. Safe to push.
