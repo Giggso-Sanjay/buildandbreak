@@ -6,8 +6,12 @@ Each endpoint returns a random response from its own pool — mix of safe and at
 
 import os
 import random
-from fastapi import FastAPI
+
+import httpx
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+from config import ConfigError, get_azure_config
 
 app = FastAPI(title="Mock LLM Endpoint", version="1.0.0")
 
@@ -77,6 +81,12 @@ class SummarizeRequest(BaseModel):
 class AnalyzeRequest(BaseModel):
     content: str
 
+class AzureChatRequest(BaseModel):
+    message: str
+    system: str | None = None
+    temperature: float = 0.7
+    max_tokens: int = 512
+
 class Envelope(BaseModel):
     status: str
     response: str
@@ -104,9 +114,54 @@ def analyze(body: AnalyzeRequest):
     return {"status": status, "response": result, "flags": flags}
 
 
+@app.post("/api/azure-chat", response_model=Envelope)
+async def azure_chat(body: AzureChatRequest):
+    """Real completion via Azure OpenAI. Credentials resolved by config.get_azure_config()."""
+    try:
+        cfg = get_azure_config()
+    except ConfigError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    messages = []
+    if body.system:
+        messages.append({"role": "system", "content": body.system})
+    messages.append({"role": "user", "content": body.message})
+
+    payload = {
+        "messages": messages,
+        "temperature": body.temperature,
+        "max_tokens": body.max_tokens,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                cfg.chat_completions_url,
+                headers={"api-key": cfg.api_key, "Content-Type": "application/json"},
+                json=payload,
+            )
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f"Azure request failed: {exc.__class__.__name__}") from exc
+
+    if resp.status_code == 400:
+        # Azure content filter rejects the prompt with 400 + content_filter code.
+        return {"status": "blocked", "response": "Request blocked by Azure content filter.", "flags": ["content_filter"]}
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Azure returned {resp.status_code}")
+
+    data = resp.json()
+    choice = (data.get("choices") or [{}])[0]
+    text = (choice.get("message") or {}).get("content") or ""
+
+    flags = []
+    if choice.get("finish_reason") == "content_filter":
+        flags.append("content_filter")
+    return {"status": "ok", "response": text, "flags": flags}
+
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "mock-llm-endpoint", "endpoints": ["/api/chat", "/api/summarize", "/api/analyze"]}
+    return {"status": "ok", "service": "mock-llm-endpoint", "endpoints": ["/api/chat", "/api/summarize", "/api/analyze", "/api/azure-chat"]}
 
 
 if __name__ == "__main__":
