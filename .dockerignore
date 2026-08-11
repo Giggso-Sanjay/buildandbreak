@@ -1,0 +1,10 @@
+.git
+.raven
+reports
+__pycache__
+*.pyc
+.env
+.env.*
+*.md
+*.txt
+!requirements.txt
