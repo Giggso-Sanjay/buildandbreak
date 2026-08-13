@@ -57,14 +57,14 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     TEMPLATE = {
         "model_info": {"name": "unable to parse", "type": "unable to parse"},
         "performance_metrics": {
-            "current": "unable to parse data from source",
-            "reference": "unable to parse data from source",
+            "current": {},
+            "reference": {},
             "performance_message": "data not provided",
             "severity": "info"
         },
         "confusion_matrix": {
             "labels": "unable to parse data from source",
-            "derived": "unable to parse data from source"
+            "derived": {}
         },
         "data_drift": {
             "drift_detected": "data not provided",
@@ -87,8 +87,15 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
         if key not in data:
             normalized[key] = template_val
         elif isinstance(template_val, dict) and not isinstance(data[key], dict):
-            # If we expected an object but got something else, mark as unable to parse
-            normalized[key] = {k: "unable to parse data from source" for k in template_val.keys()} if isinstance(template_val, dict) else "unable to parse data from source"
+            # If we expected an object but got something else, mark as unable to parse.
+            # Preserve container-typed sub-fields (e.g. performance_metrics.current/reference,
+            # confusion_matrix.derived, bias_report.metrics) as dicts/lists rather than strings,
+            # since downstream consumers call .get()/indexing/iteration on them regardless of
+            # how the section was filled.
+            normalized[key] = {
+                k: (v if isinstance(v, (dict, list)) else "unable to parse data from source")
+                for k, v in template_val.items()
+            }
         elif isinstance(template_val, dict):
             # Deep merge/check for subkeys if it's an object
             section = data[key]
@@ -96,6 +103,11 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
             for sub_k, sub_v in template_val.items():
                 if sub_k not in section:
                     normalized_section[sub_k] = sub_v
+                elif isinstance(sub_v, (dict, list)) and not isinstance(section[sub_k], type(sub_v)):
+                    # Sub-field present but wrong-typed (e.g. a string where a dict/list is
+                    # expected) - fall back to an empty container of the expected shape so
+                    # downstream .get()/iteration never sees an incompatible type.
+                    normalized_section[sub_k] = type(sub_v)()
                 else:
                     normalized_section[sub_k] = section[sub_k]
             normalized[key] = normalized_section
