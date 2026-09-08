@@ -1,3 +1,5 @@
+"""Tests for the POST /sum endpoint in app/main.py."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -25,4 +27,24 @@ def test_sum_negative_numbers():
 
 def test_sum_rejects_non_numeric_input():
     response = client.post("/sum", json={"a": "not-a-number", "b": 3})
+    assert response.status_code == 422
+
+
+def test_sum_rejects_infinity():
+    response = client.post("/sum", json={"a": "inf", "b": 1})
+    assert response.status_code == 422
+
+
+def test_sum_rejects_nan():
+    response = client.post("/sum", json={"a": "nan", "b": 1})
+    assert response.status_code == 422
+
+
+def test_sum_rejects_boolean():
+    response = client.post("/sum", json={"a": True, "b": 1})
+    assert response.status_code == 422
+
+
+def test_sum_rejects_missing_field():
+    response = client.post("/sum", json={"a": 1})
     assert response.status_code == 422

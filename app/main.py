@@ -4,13 +4,13 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from .agent_factory import build_config_from_env, write_runtime_config
 from .auth import verify_token
@@ -111,8 +111,28 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 class SumRequest(BaseModel):
-    a: float
-    b: float
+    a: Annotated[float, Field(allow_inf_nan=False)]
+    b: Annotated[float, Field(allow_inf_nan=False)]
+
+    @field_validator("a", "b", mode="before")
+    @classmethod
+    def reject_bool(cls, value: Any) -> Any:
+        """Reject booleans before Pydantic's numeric coercion accepts them.
+
+        Args:
+            value: The raw field value, as decoded from the request JSON.
+
+        Returns:
+            The value unchanged, if it is not a boolean.
+
+        Raises:
+            ValueError: If ``value`` is a boolean (``bool`` is a subclass of
+                ``int`` in Python, so it would otherwise silently coerce to
+                ``0.0``/``1.0``).
+        """
+        if isinstance(value, bool):
+            raise ValueError("must be a number, not a boolean")
+        return value
 
 
 class SumResponse(BaseModel):
