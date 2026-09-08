@@ -110,6 +110,15 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+class SumRequest(BaseModel):
+    a: float
+    b: float
+
+
+class SumResponse(BaseModel):
+    result: float
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -174,6 +183,23 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/sum", response_model=SumResponse)
+async def sum_values(request: SumRequest) -> SumResponse:
+    """Add two numeric values and return their sum.
+
+    Args:
+        request: Body containing numeric fields ``a`` and ``b``.
+
+    Returns:
+        The sum of ``a`` and ``b`` as ``result``.
+
+    Raises:
+        RequestValidationError: If ``a`` or ``b`` is not numeric (FastAPI
+            returns this as an HTTP 422 response automatically).
+    """
+    return SumResponse(result=request.a + request.b)
 
 
 @app.post("/clear-session")
