@@ -4,13 +4,13 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from .agent_factory import build_config_from_env, write_runtime_config
 from .auth import verify_token
@@ -110,6 +110,35 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+class SumRequest(BaseModel):
+    a: Annotated[float, Field(allow_inf_nan=False)]
+    b: Annotated[float, Field(allow_inf_nan=False)]
+
+    @field_validator("a", "b", mode="before")
+    @classmethod
+    def reject_bool(cls, value: Any) -> Any:
+        """Reject booleans before Pydantic's numeric coercion accepts them.
+
+        Args:
+            value: The raw field value, as decoded from the request JSON.
+
+        Returns:
+            The value unchanged, if it is not a boolean.
+
+        Raises:
+            ValueError: If ``value`` is a boolean (``bool`` is a subclass of
+                ``int`` in Python, so it would otherwise silently coerce to
+                ``0.0``/``1.0``).
+        """
+        if isinstance(value, bool):
+            raise ValueError("must be a number, not a boolean")
+        return value
+
+
+class SumResponse(BaseModel):
+    result: float
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -174,6 +203,23 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/sum", response_model=SumResponse)
+async def sum_values(request: SumRequest) -> SumResponse:
+    """Add two numeric values and return their sum.
+
+    Args:
+        request: Body containing numeric fields ``a`` and ``b``.
+
+    Returns:
+        The sum of ``a`` and ``b`` as ``result``.
+
+    Raises:
+        RequestValidationError: If ``a`` or ``b`` is not numeric (FastAPI
+            returns this as an HTTP 422 response automatically).
+    """
+    return SumResponse(result=request.a + request.b)
 
 
 @app.post("/clear-session")
