@@ -1,4 +1,4 @@
-"""Tests for the POST /sum endpoint in app/main.py."""
+"""Tests for the POST /sum and POST /reverse endpoints in app/main.py."""
 
 from fastapi.testclient import TestClient
 
@@ -47,4 +47,32 @@ def test_sum_rejects_boolean():
 
 def test_sum_rejects_missing_field():
     response = client.post("/sum", json={"a": 1})
+    assert response.status_code == 422
+
+
+def test_reverse_text() -> None:
+    response = client.post("/reverse", json={"text": "hello"})
+    assert response.status_code == 200
+    assert response.json() == {"reversed": "olleh"}
+
+
+def test_reverse_empty_string() -> None:
+    response = client.post("/reverse", json={"text": ""})
+    assert response.status_code == 200
+    assert response.json() == {"reversed": ""}
+
+
+def test_reverse_palindrome() -> None:
+    response = client.post("/reverse", json={"text": "racecar"})
+    assert response.status_code == 200
+    assert response.json() == {"reversed": "racecar"}
+
+
+def test_reverse_rejects_missing_field() -> None:
+    response = client.post("/reverse", json={})
+    assert response.status_code == 422
+
+
+def test_reverse_rejects_non_string_input() -> None:
+    response = client.post("/reverse", json={"text": 123})
     assert response.status_code == 422
