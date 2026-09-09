@@ -76,3 +76,15 @@ def test_reverse_rejects_missing_field() -> None:
 def test_reverse_rejects_non_string_input() -> None:
     response = client.post("/reverse", json={"text": 123})
     assert response.status_code == 422
+
+
+def test_reverse_accepts_max_length_text() -> None:
+    text = "a" * 10_000
+    response = client.post("/reverse", json={"text": text})
+    assert response.status_code == 200
+    assert response.json() == {"reversed": text}
+
+
+def test_reverse_rejects_over_max_length_text() -> None:
+    response = client.post("/reverse", json={"text": "a" * 10_001})
+    assert response.status_code == 422
