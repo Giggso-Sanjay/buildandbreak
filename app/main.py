@@ -139,6 +139,14 @@ class SumResponse(BaseModel):
     result: float
 
 
+class ReverseRequest(BaseModel):
+    text: Annotated[str, Field(max_length=10_000)]
+
+
+class ReverseResponse(BaseModel):
+    reversed: str
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -220,6 +228,25 @@ async def sum_values(request: SumRequest) -> SumResponse:
             returns this as an HTTP 422 response automatically).
     """
     return SumResponse(result=request.a + request.b)
+
+
+@app.post("/reverse", response_model=ReverseResponse)
+async def reverse_text(request: ReverseRequest) -> ReverseResponse:
+    """Reverse the given text.
+
+    Args:
+        request: Body containing the string field ``text`` (max 10,000
+            characters).
+
+    Returns:
+        ``text`` reversed, as ``reversed``.
+
+    Raises:
+        RequestValidationError: If ``text`` is missing, not a string, or
+            longer than 10,000 characters (FastAPI returns this as an HTTP
+            422 response automatically).
+    """
+    return ReverseResponse(reversed=request.text[::-1])
 
 
 @app.post("/clear-session")
