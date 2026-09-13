@@ -4,7 +4,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -112,7 +112,7 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
 
 class EvenOddResponse(BaseModel):
     number: int
-    result: str
+    result: Literal["even", "odd"]
 
 
 class DatasourceFile(BaseModel):
