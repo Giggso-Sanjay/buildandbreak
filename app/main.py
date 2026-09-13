@@ -110,6 +110,12 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+class StatusResponse(BaseModel):
+    status: str
+    service: str
+    version: str
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -174,6 +180,16 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/v1/status", response_model=StatusResponse)
+async def status() -> StatusResponse:
+    """Report basic service liveness and identity information.
+
+    Returns:
+        The service's status, name, and version.
+    """
+    return StatusResponse(status="ok", service="buildandbreak", version=app.version)
 
 
 @app.post("/clear-session")
