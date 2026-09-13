@@ -110,6 +110,11 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+class EvenOddResponse(BaseModel):
+    number: int
+    result: str
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -174,6 +179,20 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/v1/even-odd/{number}", response_model=EvenOddResponse)
+async def even_odd(number: int) -> EvenOddResponse:
+    """Determine whether a given integer is even or odd.
+
+    Args:
+        number: The integer to check.
+
+    Returns:
+        The original number and whether it is "even" or "odd".
+    """
+    result = "even" if number % 2 == 0 else "odd"
+    return EvenOddResponse(number=number, result=result)
 
 
 @app.post("/clear-session")
