@@ -4,9 +4,9 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -110,6 +110,13 @@ def normalize_kb_data(data: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 
+class SumEvenOddResponse(BaseModel):
+    a: int
+    b: int
+    sum: int
+    result: Literal["even", "odd"]
+
+
 class DatasourceFile(BaseModel):
     name: str
     content: str
@@ -174,6 +181,28 @@ async def on_startup() -> None:
 @app.get("/health")
 async def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/v1/sum-even-odd/{a}/{b}", response_model=SumEvenOddResponse)
+async def sum_even_odd(a: int, b: int) -> SumEvenOddResponse:
+    """Sum the integers from a to b (inclusive) and report whether the sum is odd or even.
+
+    Args:
+        a: Start of the range (inclusive).
+        b: End of the range (inclusive).
+
+    Returns:
+        The range bounds, their sum, and whether that sum is "even" or "odd".
+
+    Raises:
+        HTTPException: If a is greater than b.
+    """
+    if a > b:
+        raise HTTPException(status_code=400, detail="a must be less than or equal to b")
+
+    total = (b - a + 1) * (a + b) // 2
+    result = "even" if total % 2 == 0 else "odd"
+    return SumEvenOddResponse(a=a, b=b, sum=total, result=result)
 
 
 @app.post("/clear-session")
