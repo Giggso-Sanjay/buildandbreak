@@ -19,7 +19,7 @@ from .auth import verify_token
 logger = logging.getLogger("nanobot_api")
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="Nanobot Agent API", version="0.1.0")
+app = FastAPI(title="Testing Bot", version="0.2")
 
 # CORS for dev; prod serves FE from same origin
 app.add_middleware(
