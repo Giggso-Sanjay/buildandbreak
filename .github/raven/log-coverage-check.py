@@ -1,0 +1,1 @@
+../../../raven-core/log-coverage-check.py

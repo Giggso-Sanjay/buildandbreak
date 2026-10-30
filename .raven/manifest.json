@@ -1,0 +1,75 @@
+{
+  "project": "buildandbreak2",
+  "org": "giggso",
+  "owner": "m.satishwaran@giggso.com",
+  "user_email": "m.satishwaran@giggso.com",
+  "hub_url": "https://gsd.giggso.com",
+  "version": "1.1.0",
+  "raven_version": "3.0.0",
+  "stack": {
+    "language": ["python", "typescript"],
+    "frontend": ["react", "vite", "tailwindcss"],
+    "backend": ["fastapi"],
+    "data": [],
+    "db": ["sqlite"],
+    "infra": ["docker"],
+    "cloud": "on-prem",
+    "libraries": [
+      "fastapi",
+      "uvicorn",
+      "python-dotenv",
+      "nanobot-ai",
+      "mcp",
+      "PyJWT",
+      "react",
+      "react-dom",
+      "framer-motion",
+      "tailwindcss",
+      "postcss",
+      "autoprefixer"
+    ]
+  },
+  "standards": "raven-v1",
+  "approval_mode": "first_responder",
+  "guard": {
+    "enabled": true,
+    "version": "1.0",
+    "guards": [
+      "bash-ban-raw-tools",
+      "cbm-code-discovery-gate",
+      "cve-prompt-guard",
+      "secret-scan",
+      "audit-log"
+    ]
+  },
+  "airtaas": {
+    "mcp_url": "https://sandbox.airtaas.ai/mcp"
+  },
+  "langsmith": {
+    "enabled": false
+  },
+  "logging": {
+    "schema_version": "1",
+    "coverage_threshold": 100,
+    "sink": "local",
+    "dlq_path": ".raven/dlq/",
+    "coverage_exceptions": []
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-10-30T13:32:22Z",
+      "changed_by": "m.satishwaran@giggso.com",
+      "summary": "Raven project auto-initialised by session-start.py"
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-10-30",
+      "changed_by": "m.satishwaran@giggso.com",
+      "summary": "raven-init: stack, guards, and logging block filled from auto-scan"
+    }
+  ],
+  "contribute": {
+    "signoff_mode": "hard"
+  }
+}
