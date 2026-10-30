@@ -52,11 +52,11 @@ jobs:
             python3 skills/raven-decision-map/scripts/ast_decision_scanner.py --file "$f" \
               > this-file.json 2>/dev/null || echo "[]" > this-file.json
             python3 - "all-findings.json" "this-file.json" <<'PYEOF'
-import json, sys
-merged = json.load(open(sys.argv[1]))
-merged.extend(json.load(open(sys.argv[2])))
-json.dump(merged, open(sys.argv[1], "w"))
-PYEOF
+          import json, sys
+          merged = json.load(open(sys.argv[1]))
+          merged.extend(json.load(open(sys.argv[2])))
+          json.dump(merged, open(sys.argv[1], "w"))
+          PYEOF
           done
           echo "total findings: $(python3 -c 'import json; print(len(json.load(open("all-findings.json"))))')"
         continue-on-error: true  # fail-open (T01) — a scan-loop error never blocks the push
